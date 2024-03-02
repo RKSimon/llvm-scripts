@@ -560,8 +560,8 @@ def main():
     "avx1"    : (256, ["btver2", "sandybridge", "x86-64-v3", "broadwell", "haswell", "skylake", "alderlake", "znver1", "znver2", "znver3", "x86-64-v4", "skylake-avx512", "icelake-server", "sapphirerapids", "znver4"]),
     "sse4.2"  : (128, ["x86-64-v2", "silvermont", "goldmont", "nehalem", "btver2", "sandybridge", "x86-64-v3", "broadwell", "haswell", "skylake", "alderlake", "znver1", "znver2", "znver3", "x86-64-v4", "skylake-avx512", "icelake-server", "sapphirerapids", "znver4"]),
     "sse4.1"  : (128, ["penryn", "core2", "x86-64-v2", "silvermont", "goldmont", "nehalem", "btver2", "sandybridge", "x86-64-v3", "broadwell", "haswell", "skylake", "alderlake", "znver1", "znver2", "znver3", "x86-64-v4", "skylake-avx512", "icelake-server", "sapphirerapids", "znver4"]),
-    "ssse3"   : (128, ["atom"]),
-    "sse3"    : (128, ["atom"]),
+    "ssse3"   : (128, ["atom", "penryn", "core2", "x86-64-v2", "silvermont", "goldmont", "nehalem", "btver2", "sandybridge", "x86-64-v3", "broadwell", "haswell", "skylake", "alderlake", "znver1", "znver2", "znver3", "x86-64-v4", "skylake-avx512", "icelake-server", "sapphirerapids", "znver4"]),
+    "sse3"    : (128, ["atom", "penryn", "core2", "x86-64-v2", "silvermont", "goldmont", "nehalem", "btver2", "sandybridge", "x86-64-v3", "broadwell", "haswell", "skylake", "alderlake", "znver1", "znver2", "znver3", "x86-64-v4", "skylake-avx512", "icelake-server", "sapphirerapids", "znver4"]),
     "sse2"    : (128, ["x86-64", "atom", "penryn", "core2", "x86-64-v2", "silvermont", "goldmont", "nehalem", "btver2", "sandybridge", "x86-64-v3", "broadwell", "haswell", "skylake", "alderlake", "znver1", "znver2", "znver3", "x86-64-v4", "skylake-avx512", "icelake-server", "sapphirerapids", "znver4"]),
     "xop"     : (256, ["bdver2"]),
   }
