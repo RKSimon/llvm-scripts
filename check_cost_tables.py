@@ -113,7 +113,7 @@ def _run_codegen(op, ir, cpu):
   return costs
 
 
-def run_analysis(srctype, dsttype, op, opname, opdesc, cpus, declaration="", pre = "", post = ""):
+def run_analysis(argsignature, dsttype, op, opname, opdesc, cpus, declaration="", pre = "", post = ""):
   costkinds = [ "throughput", "latency", "code-size", "size-latency" ];
 
   analysis_costs = defaultdict(dict)
@@ -122,7 +122,7 @@ def run_analysis(srctype, dsttype, op, opname, opdesc, cpus, declaration="", pre
   # Write out candidate IR
   ir = "\n".join(
         [
-          f"define {dsttype} @costfuzz({srctype} %a0, {srctype} %a1, {srctype} %a2, ptr %p0) {{",
+          f"define {dsttype} @costfuzz({argsignature}) {{",
           pre,
           'tail call void asm sideeffect "# LLVM-MCA-BEGIN foo", "~{dirflag},~{fpsr},~{flags},~{rsp}"()',
           op,
@@ -158,7 +158,7 @@ def run_analysis(srctype, dsttype, op, opname, opdesc, cpus, declaration="", pre
     if maxmca != maxanalysis:
     #if abs(maxmca - maxanalysis) > 1:
       print(
-        f"{dsttype} {opdesc} {srctype}: analysis cost ({minanalysis} - {maxanalysis}) vs mca cost ({minmca} - {maxmca}) ({costkind})"
+        f"{dsttype} {opdesc} ({argsignature}): analysis cost ({minanalysis} - {maxanalysis}) vs mca cost ({minmca} - {maxmca}) ({costkind})"
       )
       for cpu in cpus:
         print(f"  {cpu} : {analysis_costs[costkind][cpu]} vs {mca_costs[costkind][cpu]}")
@@ -227,11 +227,11 @@ def fp_cast(maxwidth, ops, cpus):
 
           if srcbasewidth < dstbasewidth and op == "fpext":
             if dstbasewidth * elementcount <= maxwidth:
-              run_analysis(srctype, dsttype, cmd, op, op, cpus)
+              run_analysis(f"{srctype} %a0", dsttype, cmd, op, op, cpus)
 
           if srcbasewidth > dstbasewidth and op == "fptrunc":
             if srcbasewidth * elementcount <= maxwidth:
-              run_analysis(srctype, dsttype, cmd, op, op, cpus)
+              run_analysis(f"{srctype} %a0", dsttype, cmd, op, op, cpus)
 
 
 def fp_unaryops(maxwidth, ops, cpus):
@@ -241,7 +241,7 @@ def fp_unaryops(maxwidth, ops, cpus):
         if (basewidth * elementcount) <= maxwidth:
           type = get_type(elementcount, get_float_string(basewidth))
           cmd = f"%result = {op} {type} %a0"
-          run_analysis(type, type, cmd, op, op, cpus)
+          run_analysis(f"{type} %a0", type, cmd, op, op, cpus)
 
 
 def fp_binops(maxwidth, ops, cpus):
@@ -251,7 +251,7 @@ def fp_binops(maxwidth, ops, cpus):
         if (basewidth * elementcount) <= maxwidth:
           type = get_type(elementcount, get_float_string(basewidth))
           cmd = f"%result = {op} {type} %a0, %a1"
-          run_analysis(type, type, cmd, op, op, cpus)
+          run_analysis(f"{type} %a0, {type} %a1", type, cmd, op, op, cpus)
 
 
 # TODO - support bool predicate results for some targets
@@ -274,7 +274,7 @@ def fp_cmp(maxwidth, ops, cpus, boolresult = False):
               ]
             )
             opname = f"{op} {cc}"
-            run_analysis(srctype, dsttype, cmd, opname, opname, cpus)
+            run_analysis(f"{srctype} %a0, {srctype} %a1", dsttype, cmd, opname, opname, cpus)
 
 
 def fp_unaryintrinsics(maxwidth, ops, cpus):
@@ -286,7 +286,7 @@ def fp_unaryintrinsics(maxwidth, ops, cpus):
           stub = get_typefstub(elementcount, basewidth)
           cmd = f"%result = call {type} @llvm.{op}.{stub}({type} %a0)"
           declaration = f"declare {type} @llvm.{op}.{stub}({type})"
-          run_analysis(type, type, cmd, op, op, cpus, declaration)
+          run_analysis(f"{type} %a0", type, cmd, op, op, cpus, declaration)
 
 def fp_binaryintrinsics(maxwidth, ops, cpus):
   for op in ops:
@@ -297,7 +297,7 @@ def fp_binaryintrinsics(maxwidth, ops, cpus):
           stub = get_typefstub(elementcount, basewidth)
           cmd = f"%result = call {type} @llvm.{op}.{stub}({type} %a0, {type} %a1)"
           declaration = f"declare {type} @llvm.{op}.{stub}({type}, {type})"
-          run_analysis(type, type, cmd, op, op, cpus, declaration)
+          run_analysis(f"{type} %a0", type, cmd, op, op, cpus, declaration)
 
 def int_cast(maxwidth, ops, cpus):
   for op in ops:
@@ -310,12 +310,12 @@ def int_cast(maxwidth, ops, cpus):
 
           if srcbasewidth < dstbasewidth and op != "trunc":
             if dstbasewidth * elementcount <= maxwidth:
-              run_analysis(srctype, dsttype, cmd, op, op, cpus)
+              run_analysis(f"{srctype} %a0", dsttype, cmd, op, op, cpus)
 
           if srcbasewidth > dstbasewidth and op == "trunc":
             if srcbasewidth * elementcount <= maxwidth:
               if elementcount != 0:
-                run_analysis(srctype, dsttype, cmd, op, op, cpus)
+                run_analysis(f"{srctype} %a0", dsttype, cmd, op, op, cpus)
 
 
 def int_binops(maxwidth, ops, cpus):
@@ -326,7 +326,7 @@ def int_binops(maxwidth, ops, cpus):
           type = get_type(elementcount, f"i{basewidth}")
           cmd = f"%result = {op} {type} %a0, %a1"
           opname = f" {op} "
-          run_analysis(type, type, cmd, opname, opname, cpus)
+          run_analysis(f"{type} %a0, {type} %a1", type, cmd, opname, opname, cpus)
 
 
 def int_shifts(maxwidth, ops, cpus):
@@ -338,22 +338,22 @@ def int_shifts(maxwidth, ops, cpus):
           type = get_type(elementcount, f"i{basewidth}")
           # general shift
           cmd = f"%result = {op} {type} %a0, %a1"
-          run_analysis(type, type, cmd, op, op, cpus)
+          run_analysis(f"{type} %a0, {type} %a1", type, cmd, op, op, cpus)
           if elementcount == 0:
             continue
           # constant shift
           cst = get_constant(elementcount, basewidth, 2, basewidth - 2, uniform = False)
           cstcmd = f"%result = {op} {type} %a0, {cst}"
-          run_analysis(type, type, cmd, op, op + " (constant)", cpus)
+          run_analysis(f"{type} %a0, {type} %a1", type, cmd, op, op + " (constant)", cpus)
           # uniform shift
           shuffletype = get_type(elementcount, "i32")
           pre = f"%splat = shufflevector {type} %a1, {type} poison, {shuffletype} zeroinitializer"
           cmd = f"%result = {op} {type} %a0, %splat"
-          run_analysis(type, type, cmd, op, op + " (uniform)", cpus, pre = pre)
+          run_analysis(f"{type} %a0, {type} %a1", type, cmd, op, op + " (uniform)", cpus, pre = pre)
           # uniform constant shift
           cst = get_constant(elementcount, basewidth, 2, min(31, basewidth - 2), uniform = True)
           cstcmd = f"%result = {op} {type} %a0, {cst}"
-          run_analysis(type, type, cstcmd, op, op + " (uniform constant)", cpus)
+          run_analysis(f"{type} %a0, {type} %a1", type, cstcmd, op, op + " (uniform constant)", cpus)
 
 
 def int_cmp(maxwidth, ops, cpus, boolresult = False):
@@ -372,7 +372,7 @@ def int_cmp(maxwidth, ops, cpus, boolresult = False):
               ]
             )
             opname = f"{op} {cc}"
-            run_analysis(srctype, dsttype, cmd, opname, opname, cpus)
+            run_analysis(f"{srctype} %a0, {srctype} %a1", dsttype, cmd, opname, opname, cpus)
 
 
 def int_to_fp(maxwidth, ops, cpus):
@@ -384,7 +384,7 @@ def int_to_fp(maxwidth, ops, cpus):
             srctype = get_type(elementcount, f"i{srcbasewidth}")
             dsttype = get_type(elementcount, get_float_string(dstbasewidth))
             cmd = f"%result = {op} {srctype} %a0 to {dsttype}"
-            run_analysis(srctype, dsttype, cmd, op, op, cpus)
+            run_analysis(f"{srctype} %a0", dsttype, cmd, op, op, cpus)
 
 
 def fp_to_int(maxwidth, ops, cpus):
@@ -396,7 +396,7 @@ def fp_to_int(maxwidth, ops, cpus):
             srctype = get_type(elementcount, get_float_string(srcbasewidth))
             dsttype = get_type(elementcount, f"i{dstbasewidth}")
             cmd = f"%result = {op} {srctype} %a0 to {dsttype}"
-            run_analysis(srctype, dsttype, cmd, op, op, cpus)
+            run_analysis(f"{srctype} %a0", dsttype, cmd, op, op, cpus)
 
 
 def int_unaryintrinsics(maxwidth, ops, cpus, boolarg = None):
@@ -412,11 +412,11 @@ def int_unaryintrinsics(maxwidth, ops, cpus, boolarg = None):
             boolval = -1 if boolarg else 0
             cmd = f"%result = call {type} @llvm.{op}.{stub}({type} %a0, i1 {boolval})"
             declaration = f"declare {type} @llvm.{op}.{stub}({type}, i1)"
-            run_analysis(type, type, cmd, op, f"{op} {boolval}", cpus, declaration)
+            run_analysis(f"{type} %a0", type, cmd, op, f"{op} {boolval}", cpus, declaration)
           else:
             cmd = f"%result = call {type} @llvm.{op}.{stub}({type} %a0)"
             declaration = f"declare {type} @llvm.{op}.{stub}({type})"
-            run_analysis(type, type, cmd, op, op, cpus, declaration)
+            run_analysis(f"{type} %a0", type, cmd, op, op, cpus, declaration)
 
 
 def int_binaryintrinsics(maxwidth, ops, cpus):
@@ -428,7 +428,7 @@ def int_binaryintrinsics(maxwidth, ops, cpus):
           stub = get_typeistub(elementcount, basewidth)
           cmd = f"%result = call {type} @llvm.{op}.{stub}({type} %a0, {type} %a1)"
           declaration = f"declare {type} @llvm.{op}.{stub}({type}, {type})"
-          run_analysis(type, type, cmd, op, op, cpus, declaration)
+          run_analysis(f"{type} %a0, {type} %a1", type, cmd, op, op, cpus, declaration)
 
 
 def int_ternaryintrinsics(maxwidth, ops, cpus):
@@ -440,7 +440,7 @@ def int_ternaryintrinsics(maxwidth, ops, cpus):
           stub = get_typeistub(elementcount, basewidth)
           cmd = f"%result = call {type} @llvm.{op}.{stub}({type} %a0, {type} %a1, {type} %a2)"
           declaration = f"declare {type} @llvm.{op}.{stub}({type}, {type}, {type})"
-          run_analysis(type, type, cmd, op, op, cpus, declaration)
+          run_analysis(f"{type} %a0, {type} %a1, {type} %a2", type, cmd, op, op, cpus, declaration)
 
 
 def int_reductions(maxwidth, ops, cpus):
@@ -454,7 +454,7 @@ def int_reductions(maxwidth, ops, cpus):
           cmd = f"%result = call {scltype} @llvm.vector.reduce.{op}.{stub}({vectype} %a0)"
           declaration = f"declare {scltype} @llvm.vector.reduce.{op}.{stub}({vectype})"
           opname = f"vector.reduce.{op}"
-          run_analysis(vectype, scltype, cmd, opname, opname, cpus, declaration)
+          run_analysis(f"{vectype} %a0", scltype, cmd, opname, opname, cpus, declaration)
 
 
 def filter_ops(targetops, ops):
