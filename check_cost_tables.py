@@ -502,6 +502,38 @@ def int_reductions(maxwidth, ops, cpus):
           run_analysis(f"{vectype} %a0", scltype, cmd, opname, opname, cpus, declaration)
 
 
+def memop_intrinsics(maxwidth, ops, cpus):
+  for op in ops:
+    for basewidth in [32, 64]:
+      for elementcount in [2, 4, 8, 16, 32, 64]:
+        if (basewidth * elementcount) >= 128:
+          if (basewidth * elementcount) <= maxwidth:
+            btype = get_type(elementcount, f"i1")
+            ptype = get_type(elementcount, f"ptr")
+            itype = get_type(elementcount, f"i{basewidth}")
+            ftype = get_type(elementcount, get_float_string(basewidth))
+            istub = get_typeistub(elementcount, basewidth)
+            fstub = get_typefstub(elementcount, basewidth)
+            align = int(4)
+
+            if op == "gather":
+              icmd = f"%result = call {itype} @llvm.masked.gather.{istub}.v{elementcount}p0({ptype} %a0, i32 {align}, {btype} %a1, {itype} %a2)"
+              fcmd = f"%result = call {ftype} @llvm.masked.gather.{fstub}.v{elementcount}p0({ptype} %a0, i32 {align}, {btype} %a1, {ftype} %a2)"
+              ideclaration = f"declare {itype} @llvm.masked.gather.{istub}.v{elementcount}p0({ptype}, i32, {btype}, {itype})"
+              fdeclaration = f"declare {ftype} @llvm.masked.gather.{fstub}.v{elementcount}p0({ptype}, i32, {btype}, {ftype})"
+              opname = f"llvm.masked.gather"
+              run_analysis(f"{ptype} %a0, {btype} %a1, {itype} %a2", itype, icmd, opname, opname, cpus, ideclaration)
+              run_analysis(f"{ptype} %a0, {btype} %a1, {ftype} %a2", ftype, icmd, opname, opname, cpus, fdeclaration)
+            if op == "scatter":
+              icmd = f"call void @llvm.masked.scatter.{istub}.v{elementcount}p0({itype} %a2, {ptype} %a0, i32 {align}, {btype} %a1)"
+              fcmd = f"call void @llvm.masked.scatter.{fstub}.v{elementcount}p0({ftype} %a2, {ptype} %a0, i32 {align}, {btype} %a1)"
+              ideclaration = f"declare void @llvm.masked.scatter.{istub}.v{elementcount}p0({itype}, {ptype}, i32, {btype})"
+              fdeclaration = f"declare void @llvm.masked.scatter.{fstub}.v{elementcount}p0({ftype}, {ptype}, i32, {btype})"
+              opname = f"llvm.masked.scatter"
+              run_analysis(f"{ptype} %a0, {btype} %a1, {itype} %a2", "i32", icmd, opname, opname, cpus, ideclaration, "%result = add i32 0, 0")
+              run_analysis(f"{ptype} %a0, {btype} %a1, {ftype} %a2", "i32", fcmd, opname, opname, cpus, fdeclaration, "%result = add i32 0, 0")
+
+
 def filter_ops(targetops, ops):
   if len(targetops) == 0:
     return ops
@@ -592,6 +624,9 @@ def test_cpus(targetops, maxwidth, cpulevel, cpus):
   ops = filter_ops(targetops, ["fshl", "fshr"])
   int_funnelshifts(maxwidth, ops, cpus)
 
+  # TODO - maskedload/maskedstore/expandload/compressstore
+  ops = filter_ops(targetops, ["gather", "scatter"])
+  memop_intrinsics(maxwidth, ops, cpus)
 
 def main():
   default_num_threads = os.cpu_count()
