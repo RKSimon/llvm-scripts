@@ -343,7 +343,7 @@ def int_shifts(maxwidth, ops, cpus):
             continue
           # constant shift
           cst = get_constant(elementcount, basewidth, 2, basewidth - 2, uniform = False)
-          cstcmd = f"%result = {op} {type} %a0, {cst}"
+          cmd = f"%result = {op} {type} %a0, {cst}"
           run_analysis(f"{type} %a0, {type} %a1", type, cmd, op, op + " (constant)", cpus)
           # uniform shift
           shuffletype = get_type(elementcount, "i32")
@@ -352,8 +352,8 @@ def int_shifts(maxwidth, ops, cpus):
           run_analysis(f"{type} %a0, {type} %a1", type, cmd, op, op + " (uniform)", cpus, pre = pre)
           # uniform constant shift
           cst = get_constant(elementcount, basewidth, 2, min(31, basewidth - 2), uniform = True)
-          cstcmd = f"%result = {op} {type} %a0, {cst}"
-          run_analysis(f"{type} %a0, {type} %a1", type, cstcmd, op, op + " (uniform constant)", cpus)
+          cmd = f"%result = {op} {type} %a0, {cst}"
+          run_analysis(f"{type} %a0, {type} %a1", type, cmd, op, op + " (uniform constant)", cpus)
 
 
 def int_cmp(maxwidth, ops, cpus, boolresult = False):
