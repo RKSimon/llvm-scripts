@@ -356,6 +356,51 @@ def int_shifts(maxwidth, ops, cpus):
           run_analysis(f"{type} %a0, {type} %a1", type, cmd, op, op + " (uniform constant)", cpus)
 
 
+def int_funnelshifts(maxwidth, ops, cpus):
+  for op in ops:
+    for basewidth in [8, 16, 32, 64]:
+      for elementcount in [0, 2, 4, 8, 16, 32, 64]:
+        if (basewidth * elementcount) <= maxwidth:
+          type = get_type(elementcount, f"i{basewidth}")
+          stub = get_typeistub(elementcount, basewidth)
+          # general shift         
+          cmd = f"%result = call {type} @llvm.{op}.{stub}({type} %a0, {type} %a1, {type} %a2)"
+          declaration = f"declare {type} @llvm.{op}.{stub}({type}, {type}, {type})"
+          run_analysis(f"{type} %a0, {type} %a1, {type} %a2", type, cmd, op, op, cpus, declaration)
+          # general rotate         
+          cmd = f"%result = call {type} @llvm.{op}.{stub}({type} %a0, {type} %a0, {type} %a2)"
+          declaration = f"declare {type} @llvm.{op}.{stub}({type}, {type}, {type})"
+          run_analysis(f"{type} %a0, {type} %a1, {type} %a2", type, cmd, op, op + " (rotate)", cpus, declaration)
+          if elementcount == 0:
+            continue
+          # constant shift
+          cst = get_constant(elementcount, basewidth, 2, basewidth - 2, uniform = False)
+          cmd = f"%result = call {type} @llvm.{op}.{stub}({type} %a0, {type} %a1, {type} {cst})"
+          run_analysis(f"{type} %a0, {type} %a1, {type} %a2", type, cmd, op, op + " (constant)", cpus, declaration)
+          # constant rotate
+          cst = get_constant(elementcount, basewidth, 2, basewidth - 2, uniform = False)
+          cmd = f"%result = call {type} @llvm.{op}.{stub}({type} %a0, {type} %a0, {type} {cst})"
+          run_analysis(f"{type} %a0, {type} %a1, {type} %a2", type, cmd, op, op + " (constant rotate)", cpus, declaration)
+          # uniform shift
+          # shuffletype = get_type(elementcount, "i32")
+          # pre = f"%splat = shufflevector {type} %a2, {type} poison, {shuffletype} zeroinitializer"
+          # cmd = f"%result = call {type} @llvm.{op}.{stub}({type} %a0, {type} %a1, {type} %splat)"
+          # run_analysis(f"{type} %a0, {type} %a1, {type} %a2", type, cmd, op, op + " (uniform)", cpus, declaration)
+          # uniform rotate
+          # shuffletype = get_type(elementcount, "i32")
+          # pre = f"%splat = shufflevector {type} %a2, {type} poison, {shuffletype} zeroinitializer"
+          # cmd = f"%result = call {type} @llvm.{op}.{stub}({type} %a0, {type} %a0, {type} %splat)"
+          # run_analysis(f"{type} %a0, {type} %a1, {type} %a2", type, cmd, op, op + " (uniform rotate)", cpus, declaration)
+          # uniform constant shift
+          cst = get_constant(elementcount, basewidth, 2, min(31, basewidth - 2), uniform = True)
+          cmd = f"%result = call {type} @llvm.{op}.{stub}({type} %a0, {type} %a1, {type} {cst})"
+          run_analysis(f"{type} %a0, {type} %a1, {type} %a2", type, cmd, op, op + " (uniform constant)", cpus, declaration)
+          # uniform constant rotate
+          cst = get_constant(elementcount, basewidth, 2, min(31, basewidth - 2), uniform = True)
+          cmd = f"%result = call {type} @llvm.{op}.{stub}({type} %a0, {type} %a0, {type} {cst})"
+          run_analysis(f"{type} %a0, {type} %a1, {type} %a2", type, cmd, op, op + " (uniform constant rotate)", cpus, declaration)
+
+
 def int_cmp(maxwidth, ops, cpus, boolresult = False):
   for op in ops:
     for basewidth in [8, 16, 32, 64]:
@@ -545,7 +590,7 @@ def test_cpus(targetops, maxwidth, cpulevel, cpus):
 
   # TODO - uniform / constant shift amount costs
   ops = filter_ops(targetops, ["fshl", "fshr"])
-  int_ternaryintrinsics(maxwidth, ops, cpus)
+  int_funnelshifts(maxwidth, ops, cpus)
 
 
 def main():
