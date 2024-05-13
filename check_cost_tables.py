@@ -124,9 +124,9 @@ def run_analysis(argsignature, dsttype, op, opname, opdesc, cpus, declaration=""
         [
           f"define {dsttype} @costfuzz({argsignature}) {{",
           pre,
-          'tail call void asm sideeffect "# LLVM-MCA-BEGIN foo", "~{dirflag},~{fpsr},~{flags},~{rsp}"()',
+          'tail call void asm sideeffect "# LLVM-MCA-BEGIN foo", "~{dirflag},~{fpsr},~{flags},~{rsp},~{memory}"()',
           op,
-          'tail call void asm sideeffect "# LLVM-MCA-END foo", "~{dirflag},~{fpsr},~{flags},~{rsp}"()',
+          'tail call void asm sideeffect "# LLVM-MCA-END foo", "~{dirflag},~{fpsr},~{flags},~{rsp},~{memory}"()',
           post,
           f"ret {dsttype} %result",
           "}",
