@@ -363,11 +363,11 @@ def int_funnelshifts(maxwidth, ops, cpus):
         if (basewidth * elementcount) <= maxwidth:
           type = get_type(elementcount, f"i{basewidth}")
           stub = get_typeistub(elementcount, basewidth)
-          # general shift         
+          # general shift
           cmd = f"%result = call {type} @llvm.{op}.{stub}({type} %a0, {type} %a1, {type} %a2)"
           declaration = f"declare {type} @llvm.{op}.{stub}({type}, {type}, {type})"
           run_analysis(f"{type} %a0, {type} %a1, {type} %a2", type, cmd, op, op, cpus, declaration)
-          # general rotate         
+          # general rotate
           cmd = f"%result = call {type} @llvm.{op}.{stub}({type} %a0, {type} %a0, {type} %a2)"
           declaration = f"declare {type} @llvm.{op}.{stub}({type}, {type}, {type})"
           run_analysis(f"{type} %a0, {type} %a1, {type} %a2", type, cmd, op, op + " (rotate)", cpus, declaration)
@@ -523,7 +523,7 @@ def memop_intrinsics(maxwidth, ops, cpus):
               fdeclaration = f"declare {ftype} @llvm.masked.gather.{fstub}.v{elementcount}p0({ptype}, i32, {btype}, {ftype})"
               opname = f"llvm.masked.gather"
               run_analysis(f"{ptype} %a0, {btype} %a1, {itype} %a2", itype, icmd, opname, opname, cpus, ideclaration)
-              run_analysis(f"{ptype} %a0, {btype} %a1, {ftype} %a2", ftype, icmd, opname, opname, cpus, fdeclaration)
+              run_analysis(f"{ptype} %a0, {btype} %a1, {ftype} %a2", ftype, fcmd, opname, opname, cpus, fdeclaration)
             if op == "scatter":
               icmd = f"call void @llvm.masked.scatter.{istub}.v{elementcount}p0({itype} %a2, {ptype} %a0, i32 {align}, {btype} %a1)"
               fcmd = f"call void @llvm.masked.scatter.{fstub}.v{elementcount}p0({ftype} %a2, {ptype} %a0, i32 {align}, {btype} %a1)"
