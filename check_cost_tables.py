@@ -610,7 +610,7 @@ def test_cpus(targetops, maxwidth, cpulevel, cpus):
   ops = filter_ops(targetops, ["bitreverse", "bswap", "ctpop"])
   int_unaryintrinsics(maxwidth, ops, cpus)
 
-  ops = filter_ops(targetops, ["ctlz", "cttz"])
+  ops = filter_ops(targetops, ["abs", "ctlz", "cttz"])
   int_unaryintrinsics(maxwidth, ops, cpus, False)
   int_unaryintrinsics(maxwidth, ops, cpus, True)
 
