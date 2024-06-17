@@ -1,29 +1,32 @@
 #!/usr/bin/env python3
 
+import argparse
 from ast import Continue
 import xml.etree.ElementTree as ET
+
+class Error(Exception):
+  """Simple exception type for erroring without a traceback."""
 
 # TODO: SNB/IVB
 def get_cpu_details(cpu):
    details = {
-      "BNL":  ["BNL", "bonnell", "AtomPort", 2],
-      "SNB":  ["SNB", "sandybridge", "SBPort", 6],
-      "IVB":  ["IVB", "ivybridge", "SBPort", 6],
-      "HSW":  ["HSW", "haswell", "HWPort", 8],
-      "BDW":  ["BDW", "broadwell", "BWPort", 8],
-      "SKL":  ["SKL", "skylake", "SKLPort", 8],
-      "SKX":  ["SKX", "skylake-avx512", "SKXPort", 8],
-      "CNL":  ["CNL", "cannonlake", "SKXPort", 8],
-      "CLX":  ["CLX", "cascadelake", "SKXPort", 8],
-      "ICL":  ["ICL", "icelake-server", "ICXPort", 10],
-      "RKL":  ["RKL", "rocketlake", "ICXPort", 10],
-      "TGL":  ["TGL", "tigerlake", "ICXPort", 10],
-      "ADL":  ["ADL-P", "alderlake", "ADLPPort", 12],
-      "ZEN+": ["ZEN+", "znver1", "ZnFPU", 4],
-      "ZEN1": ["ZEN+", "znver1", "ZnFPU", 4],
-      "ZEN2": ["ZEN2", "znver2", "Zn2FPU", 4],
-      "ZEN3": ["ZEN3", "znver3", "Zn3FP", 4],
-      "ZEN4": ["ZEN4", "znver4", "Zn4FP", 4]
+      "bonnell"        : ["BNL", "bonnell", "AtomPort", 2],
+      "sandybridge"    : ["SNB", "sandybridge", "SBPort", 6],
+      "ivybridge"      : ["IVB", "ivybridge", "SBPort", 6],
+      "haswell"        : ["HSW", "haswell", "HWPort", 8],
+      "broadwell"      : ["BDW", "broadwell", "BWPort", 8],
+      "skylake"        : ["SKL", "skylake", "SKLPort", 8],
+      "skylake-avx512" : ["SKX", "skylake-avx512", "SKXPort", 8],
+      "cannonlake"     : ["CNL", "cannonlake", "SKXPort", 8],
+      "cascadelake"    : ["CLX", "cascadelake", "SKXPort", 8],
+      "icelake-server" : ["ICL", "icelake-server", "ICXPort", 10],
+      "rocketlake"     : ["RKL", "rocketlake", "ICXPort", 10],
+      "tigerlake"      : ["TGL", "tigerlake", "ICXPort", 10],
+      "alderlake"      : ["ADL-P", "alderlake", "ADLPPort", 12],
+      "znver1"         : ["ZEN+", "znver1", "ZnFPU", 4],
+      "znver2"         : ["ZEN2", "znver2", "Zn2FPU", 4],
+      "znver3"         : ["ZEN3", "znver3", "Zn3FP", 4],
+      "znver4"         : ["ZEN4", "znver4", "Zn4FP", 4]
       }
    return details.get(cpu)
 
@@ -187,7 +190,26 @@ def print_cpu_uops_yaml(cpu):
       print(f"...")
 
 def main():
-   print_cpu_uops_yaml('HSW')
+  parser = argparse.ArgumentParser(description=__doc__)
+  parser.add_argument(
+    '-cpu', '-mcpu',
+    default='haswell',
+    help='Target CPU',
+  )
+  parser.add_argument(
+    '-mode',
+    default='uops',
+    choices=['uops', 'inverse_throughput', 'latency'],
+    help='Capture Mode',
+  )
+
+  global args
+  args = parser.parse_args()
+
+  if get_cpu_details(args.cpu) is None:
+    raise Error(f"Unknown cpu: {args.cpu}")
+
+  print_cpu_uops_yaml(args.cpu)
 
 if __name__ == "__main__":
     main()
