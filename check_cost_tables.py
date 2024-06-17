@@ -634,6 +634,7 @@ def main():
   # TODO - 2 modes - (a) create generic codegen for sse level and compare cpu analysis
   #          (b) create generic codegen for each cpu of a similar level and compare cpu analysis
   cpulevels = {
+    "gfni"    : (512, ["icelake-server", "sapphirerapids", "znver4"]),
     "avx512"  : (512, ["x86-64-v4", "skylake-avx512", "icelake-server", "sapphirerapids", "znver4"]),
     "avx512f" : (512, ["knl", "x86-64-v4", "skylake-avx512", "icelake-server", "sapphirerapids", "znver4"]),
     "avx2"    : (256, ["x86-64-v3", "broadwell", "haswell", "skylake", "alderlake", "znver1", "znver2", "znver3", "x86-64-v4", "skylake-avx512", "icelake-server", "sapphirerapids", "znver4"]),
