@@ -113,20 +113,32 @@ def _run_codegen(op, ir, cpu):
   return costs
 
 
-def run_analysis(argsignature, dsttype, op, opname, opdesc, cpus, declaration="", pre = "", post = ""):
+def run_analysis(argsignature, dsttype, op, opname, opdesc, cpus, declaration="", pre = "", post = "", usefence = True):
   costkinds = [ "throughput", "latency", "code-size", "size-latency" ];
 
   analysis_costs = defaultdict(dict)
   mca_costs = defaultdict(dict)
+
+  if usefence:
+    pre = "\n".join(
+      [
+          pre,
+          'tail call void asm sideeffect "# LLVM-MCA-BEGIN foo", "~{dirflag},~{fpsr},~{flags},~{rsp},~{memory}"()',
+      ]
+    )
+    post = "\n".join(
+      [
+          'tail call void asm sideeffect "# LLVM-MCA-END foo", "~{dirflag},~{fpsr},~{flags},~{rsp},~{memory}"()',
+          post,
+      ]
+    )
 
   # Write out candidate IR
   ir = "\n".join(
         [
           f"define {dsttype} @costfuzz({argsignature}) {{",
           pre,
-          'tail call void asm sideeffect "# LLVM-MCA-BEGIN foo", "~{dirflag},~{fpsr},~{flags},~{rsp},~{memory}"()',
           op,
-          'tail call void asm sideeffect "# LLVM-MCA-END foo", "~{dirflag},~{fpsr},~{flags},~{rsp},~{memory}"()',
           post,
           f"ret {dsttype} %result",
           "}",
@@ -473,7 +485,7 @@ def int_binaryintrinsics(maxwidth, ops, cpus):
           stub = get_typeistub(elementcount, basewidth)
           cmd = f"%result = call {type} @llvm.{op}.{stub}({type} %a0, {type} %a1)"
           declaration = f"declare {type} @llvm.{op}.{stub}({type}, {type})"
-          run_analysis(f"{type} %a0, {type} %a1", type, cmd, op, op, cpus, declaration)
+          run_analysis(f"{type} %a0, {type} %a1", type, cmd, op, op, cpus, declaration, usefence = elementcount > 0)
 
 
 def int_ternaryintrinsics(maxwidth, ops, cpus):
