@@ -94,8 +94,6 @@ def print_cpu_uops_yaml(cpu):
         continue
       if asm.find("INSERT") != -1 and instrNode.attrib['extension'] not in ['SSE4a']:
         continue
-      if asm.find("RCPS") != -1 or asm.find("SQRTS") != -1 or asm.find("ROUNDS") != -1:
-        continue
       if asm.find("PEXTR") != -1 or asm.find("PINSR") != -1 or asm.find("PREFETCH") != -1:
         continue
       if asm.find("BROADCAST") != -1 or asm.find("F128") != -1 or asm.find("I128") != -1 or asm.find("LDDQU") != -1 or asm.find("MXCSR") != -1:
@@ -186,6 +184,11 @@ def print_cpu_uops_yaml(cpu):
 
       if isfma:
         sig = 'm' if sig.find('m') != -1 else 'r'
+
+      if asm.find("RCPS") != -1 or asm.find("SQRTS") != -1:
+        sig = 'm' if sig.find('m') != -1 else 'r'
+      if asm.find("ROUNDS") != -1:
+        sig = 'mi' if sig.find('m') != -1 else 'ri'
 
       # SSE BLENDV xmm0 hack
       if asm.startswith("BLENDV") or asm.startswith("PBLENDV"):
