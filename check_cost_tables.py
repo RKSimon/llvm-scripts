@@ -462,7 +462,8 @@ def int_unaryintrinsics(maxwidth, ops, cpus, boolarg = None):
       if op == "bswap" and basewidth == 8:
         continue
       for elementcount in [0, 2, 4, 8, 16, 32, 64]:
-        if (basewidth * elementcount) <= maxwidth:
+        minwidth = 128 if elementcount > 0 else 0
+        if minwidth <= (basewidth * elementcount) and (basewidth * elementcount) <= maxwidth:
           type = get_type(elementcount, f"i{basewidth}")
           stub = get_typeistub(elementcount, basewidth)
           if boolarg is not None:
@@ -480,7 +481,8 @@ def int_binaryintrinsics(maxwidth, ops, cpus):
   for op in ops:
     for basewidth in [8, 16, 32, 64]:
       for elementcount in [0, 2, 4, 8, 16, 32, 64]:
-        if (basewidth * elementcount) <= maxwidth:
+        minwidth = 128 if elementcount > 0 else 0
+        if minwidth <= (basewidth * elementcount) and (basewidth * elementcount) <= maxwidth:
           type = get_type(elementcount, f"i{basewidth}")
           stub = get_typeistub(elementcount, basewidth)
           cmd = f"%result = call {type} @llvm.{op}.{stub}({type} %a0, {type} %a1)"
@@ -492,7 +494,8 @@ def int_ternaryintrinsics(maxwidth, ops, cpus):
   for op in ops:
     for basewidth in [8, 16, 32, 64]:
       for elementcount in [0, 2, 4, 8, 16, 32, 64]:
-        if (basewidth * elementcount) <= maxwidth:
+        minwidth = 128 if elementcount > 0 else 0
+        if minwidth <= (basewidth * elementcount) and (basewidth * elementcount) <= maxwidth:
           type = get_type(elementcount, f"i{basewidth}")
           stub = get_typeistub(elementcount, basewidth)
           cmd = f"%result = call {type} @llvm.{op}.{stub}({type} %a0, {type} %a1, {type} %a2)"
@@ -503,8 +506,9 @@ def int_ternaryintrinsics(maxwidth, ops, cpus):
 def int_overflowintrinsics(maxwidth, ops, cpus):
   for op in ops:
     for basewidth in [8, 16, 32, 64]:
-      for elementcount in [2, 4, 8, 16, 32, 64]:
-        if (basewidth * elementcount) <= maxwidth:
+      for elementcount in [0, 2, 4, 8, 16, 32, 64]:
+        minwidth = 128 if elementcount > 0 else 0
+        if minwidth <= (basewidth * elementcount) and (basewidth * elementcount) <= maxwidth:
           type = get_type(elementcount, f"i{basewidth}")
           ctype = get_type(elementcount, f"i1")
           rtype = f"{{{type}, {ctype}}}"
