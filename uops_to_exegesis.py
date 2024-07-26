@@ -40,13 +40,14 @@ def distribute_pressure(pressure, ports, group):
     # collect current pressure value of all ports in op group
     pressure_map = dict()
     for p in list(group):
-      pressure_map[int(p)] = ports[int(p)]
+      i = int(p, 16)
+      pressure_map[i] = ports[i]
 
     # if all the same pressure, then just distribute equally
     pressure_values = set(pressure_map.values())
     if len(pressure_values) == 1:
       for p in list(group):
-        ports[int(p)] += (pressure / float(len(group)))
+        ports[int(p, 16)] += (pressure / float(len(group)))
       return
 
     # find the minimum pressure and which
@@ -57,16 +58,16 @@ def distribute_pressure(pressure, ports, group):
 
     min_pressure_ports = list()
     for p in list(group):
-      if ports[int(p)] == min_pressure:
+      if ports[int(p, 16)] == min_pressure:
         min_pressure_ports.append(p)
 
     if pressure <= distrib_pressure:
       for p in min_pressure_ports:
-        ports[int(p)] += (pressure / float(len(min_pressure_ports)))
+        ports[int(p, 16)] += (pressure / float(len(min_pressure_ports)))
       return
 
     for p in min_pressure_ports:
-      ports[int(p)] = next_pressure
+      ports[int(p, 16)] = next_pressure
       pressure -= next_pressure
 
 def print_cpu_uops_yaml(cpu):
@@ -204,7 +205,7 @@ def print_cpu_uops_yaml(cpu):
         group = group.removeprefix('FP').removeprefix('p')
         ops.append((count,group))
         for p in list(group):
-          ports[int(p)] = 0.0
+          ports[int(p, 16)] = 0.0
 
       # sort ops by #ports they can be applied to
       ops = sorted(ops, key=lambda e: len(e[1]))
