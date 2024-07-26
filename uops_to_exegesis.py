@@ -24,8 +24,8 @@ def get_all_cpu_details():
     "alderlake"      : ["ADL-P", "alderlake", ("ADLPPort00", "ADLPPort01", "ADLPPort02", "ADLPPort03", "ADLPPort04", "ADLPPort05", "ADLPPort06", "ADLPPort07", "ADLPPort08", "ADLPPort09", "ADLPPort10", "ADLPPort11")],
     "znver1"         : ["ZEN+", "znver1", ("ZnFPU0", "ZnFPU1", "ZnFPU2", "ZnFPU3")],
     "znver2"         : ["ZEN2", "znver2", ("Zn2FPU0", "Zn2FPU1", "Zn2FPU2", "Zn2FPU3")],
-    "znver3"         : ["ZEN3", "znver3", ("Zn3FPU0", "Zn3FPU1", "Zn3FPU2", "Zn3FPU3")],
-    "znver4"         : ["ZEN4", "znver4", ("Zn4FPU0", "Zn4FPU1", "Zn4FPU2", "Zn4FPU3")]
+    "znver3"         : ["ZEN3", "znver3", ("Zn3FP0", "Zn3FP1", "Zn3FP2", "Zn3FP3", "Zn3FP45", "Zn3FP45")],
+    "znver4"         : ["ZEN4", "znver4", ("Zn4FP0", "Zn4FP1", "Zn4FP2", "Zn4FP3", "Zn4FP45", "Zn4FP45")]
     }
 
 def get_cpu_details(cpu):
@@ -90,7 +90,9 @@ def print_cpu_uops_yaml(cpu):
         continue
 
       # TODO: Broken instructions (don't follow the standard naming convention)
-      if asm.find("EXTRACT") != -1 or asm.find("INSERT") != -1:
+      if asm.find("EXTRACT") != -1:
+        continue
+      if asm.find("INSERT") != -1 and instrNode.attrib['extension'] not in ['SSE4a']:
         continue
       if asm.find("RCPS") != -1 or asm.find("SQRTS") != -1 or asm.find("ROUNDS") != -1:
         continue
