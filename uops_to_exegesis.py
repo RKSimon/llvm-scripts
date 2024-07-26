@@ -7,26 +7,25 @@ import xml.etree.ElementTree as ET
 class Error(Exception):
   """Simple exception type for erroring without a traceback."""
 
-# TODO: SNB/IVB
 def get_all_cpu_details():
   return {
-    "bonnell"        : ["BNL", "bonnell", "AtomPort", 2],
-    "sandybridge"    : ["SNB", "sandybridge", "SBPort", 6],
-    "ivybridge"      : ["IVB", "ivybridge", "SBPort", 6],
-    "haswell"        : ["HSW", "haswell", "HWPort", 8],
-    "broadwell"      : ["BDW", "broadwell", "BWPort", 8],
-    "skylake"        : ["SKL", "skylake", "SKLPort", 8],
-    "skylake-avx512" : ["SKX", "skylake-avx512", "SKXPort", 8],
-    "cannonlake"     : ["CNL", "cannonlake", "SKXPort", 8],
-    "cascadelake"    : ["CLX", "cascadelake", "SKXPort", 8],
-    "icelake-server" : ["ICL", "icelake-server", "ICXPort", 10],
-    "rocketlake"     : ["RKL", "rocketlake", "ICXPort", 10],
-    "tigerlake"      : ["TGL", "tigerlake", "ICXPort", 10],
-    "alderlake"      : ["ADL-P", "alderlake", "ADLPPort", 12],
-    "znver1"         : ["ZEN+", "znver1", "ZnFPU", 4],
-    "znver2"         : ["ZEN2", "znver2", "Zn2FPU", 4],
-    "znver3"         : ["ZEN3", "znver3", "Zn3FP", 4],
-    "znver4"         : ["ZEN4", "znver4", "Zn4FP", 4]
+    "bonnell"        : ["BNL", "bonnell", ("AtomPort0", "AtomPort1")],
+    "sandybridge"    : ["SNB", "sandybridge", ("SBPort0", "SBPort1", "SBPort23", "SBPort23", "SBPort4", "SBPort5")],
+    "ivybridge"      : ["IVB", "ivybridge", ("SBPort0", "SBPort1", "SBPort23", "SBPort23", "SBPort4", "SBPort5")],
+    "haswell"        : ["HSW", "haswell", ("HWPort0", "HWPort1", "HWPort2", "HWPort3", "HWPort4", "HWPort5", "HWPort6", "HWPort7")],
+    "broadwell"      : ["BDW", "broadwell", ("BWPort0", "BWPort1", "BWPort2", "BWPort3", "BWPort4", "BWPort5", "BWPort6", "BWPort7")],
+    "skylake"        : ["SKL", "skylake", ("SKLPort0", "SKLPort1", "SKLPort2", "SKLPort3", "SKLPort4", "SKLPort5", "SKLPort6", "SKLPort7")],
+    "skylake-avx512" : ["SKX", "skylake-avx512", ("SKXPort0", "SKXPort1", "SKXPort2", "SKXPort3", "SKXPort4", "SKXPort5", "SKXPort6", "SKXPort7")],
+    "cannonlake"     : ["CNL", "cannonlake", ("SKXPort0", "SKXPort1", "SKXPort2", "SKXPort3", "SKXPort4", "SKXPort5", "SKXPort6", "SKXPort7")],
+    "cascadelake"    : ["CLX", "cascadelake", ("SKXPort0", "SKXPort1", "SKXPort2", "SKXPort3", "SKXPort4", "SKXPort5", "SKXPort6", "SKXPort7")],
+    "icelake-server" : ["ICL", "icelake-server", ("ICXPort0", "ICXPort1", "ICXPort2", "ICXPort3", "ICXPort4", "ICXPort5", "ICXPort6", "ICXPort7", "ICXPort8", "ICXPort9")],
+    "rocketlake"     : ["RKL", "rocketlake", ("ICXPort0", "ICXPort1", "ICXPort2", "ICXPort3", "ICXPort4", "ICXPort5", "ICXPort6", "ICXPort7", "ICXPort8", "ICXPort9")],
+    "tigerlake"      : ["TGL", "tigerlake", ("ICXPort0", "ICXPort1", "ICXPort2", "ICXPort3", "ICXPort4", "ICXPort5", "ICXPort6", "ICXPort7", "ICXPort8", "ICXPort9")],
+    "alderlake"      : ["ADL-P", "alderlake", ("ADLPPort00", "ADLPPort01", "ADLPPort02", "ADLPPort03", "ADLPPort04", "ADLPPort05", "ADLPPort06", "ADLPPort07", "ADLPPort08", "ADLPPort09", "ADLPPort10", "ADLPPort11")],
+    "znver1"         : ["ZEN+", "znver1", ("ZnFPU0", "ZnFPU1", "ZnFPU2", "ZnFPU3")],
+    "znver2"         : ["ZEN2", "znver2", ("Zn2FPU0", "Zn2FPU1", "Zn2FPU2", "Zn2FPU3")],
+    "znver3"         : ["ZEN3", "znver3", ("Zn3FPU0", "Zn3FPU1", "Zn3FPU2", "Zn3FPU3")],
+    "znver4"         : ["ZEN4", "znver4", ("Zn4FPU0", "Zn4FPU1", "Zn4FPU2", "Zn4FPU3")]
     }
 
 def get_cpu_details(cpu):
@@ -73,7 +72,7 @@ def distribute_pressure(pressure, ports, group):
 def print_cpu_uops_yaml(cpu):
    root = ET.parse('instructions.xml')
 
-   [cpuname, cpumodel, portprefix, numports] = get_cpu_details(cpu)
+   [cpuname, cpumodel, portmap] = get_cpu_details(cpu)
 
    for instrNode in root.iter('instruction'):
       if instrNode.attrib['extension'] not in ['MMX', 'SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4', 'AVX', 'AVX2', 'PCLMULQDQ', 'VPCLMULQDQ']: # 'SSE4a', 'FMA'
@@ -217,6 +216,11 @@ def print_cpu_uops_yaml(cpu):
 
       args = args.lstrip().rstrip()
 
+      mapped_ports = dict.fromkeys(portmap, 0.0)
+      for i, p in ports.items():
+        portname = portmap[i]
+        mapped_ports[portname] += p
+
       print(f"---")
       print(f"mode:            uops")
       print(f"key:")
@@ -230,8 +234,8 @@ def print_cpu_uops_yaml(cpu):
       print(f"llvm_triple:     x86_64-unknown-linux-gnu")
       print(f"num_repetitions: 10000")
       print(f"measurements:")
-      for p in range(numports):
-         print(f"  - {{ key: {portprefix}{p}, value: {ports.get(p, 0.0)}, per_snippet_value: {ports.get(p, 0.0)} }}")
+      for portname, portpressure in mapped_ports.items():
+         print(f"  - {{ key: {portname}, value: {portpressure}, per_snippet_value: {portpressure} }}")
       print(f"  - {{ key: NumMicroOps, value: {uops}, per_snippet_value: {uops} }}")
       print(f"error:           ''")
       print(f"info:            instruction is serial, repeating a random one.")
