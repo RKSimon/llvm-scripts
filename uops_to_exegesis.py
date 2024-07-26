@@ -76,7 +76,7 @@ def print_cpu_uops_yaml(cpu):
    [cpuname, cpumodel, portmap] = get_cpu_details(cpu)
 
    for instrNode in root.iter('instruction'):
-      if instrNode.attrib['extension'] not in ['MMX', 'SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4', 'AVX', 'AVX2', 'PCLMULQDQ', 'VPCLMULQDQ', 'FMA']: # 'SSE4a'
+      if instrNode.attrib['extension'] not in ['MMX', 'SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4a', 'SSE4', 'AVX', 'AVX2', 'PCLMULQDQ', 'VPCLMULQDQ', 'FMA']:
          continue
       if any(x in instrNode.attrib['isa-set'] for x in ['FP16']):
          continue
@@ -112,6 +112,7 @@ def print_cpu_uops_yaml(cpu):
 
       ismmx = instrNode.attrib['category'] in ['MMX'] or instrNode.attrib['extension'] in ['MMX']
       issse = instrNode.attrib['extension'] in ['SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4', 'SSE4a']
+      issse4a = instrNode.attrib['extension'] in ['SSE4a']
       isfma = instrNode.attrib['extension'] in ['FMA']
       isopmask = instrNode.attrib.get('mask', '0') == '1'
       iszeroing = instrNode.attrib.get('zeroing', '0') == '1'
@@ -177,8 +178,12 @@ def print_cpu_uops_yaml(cpu):
       if ismmx:
          asm = "MMX_" + asm
 
+      if issse4a:
+        asm += 'I' if sig.find('i') != -1  else ''
+        sig = ''
+
       if isfma:
-        sig = "m" if sig.find("m") else "r"
+        sig = 'm' if sig.find('m') != -1 else 'r'
 
       # SSE BLENDV xmm0 hack
       if asm.startswith("BLENDV") or asm.startswith("PBLENDV"):
