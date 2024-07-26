@@ -92,8 +92,6 @@ def print_cpu_uops_yaml(cpu):
       # TODO: Broken instructions (don't follow the standard naming convention)
       if asm.find("EXTRACT") != -1:
         continue
-      if asm.find("INSERT") != -1 and instrNode.attrib['extension'] not in ['SSE4a']:
-        continue
       if asm.find("PEXTR") != -1 or asm.find("PINSR") != -1 or asm.find("PREFETCH") != -1:
         continue
       if asm.find("BROADCAST") != -1 or asm.find("LDDQU") != -1 or asm.find("MXCSR") != -1:
@@ -167,6 +165,7 @@ def print_cpu_uops_yaml(cpu):
       if fail:
          continue;
 
+      # Cleanup signature to match LLVM opnames
       if ismmx:
          asm = "MMX_" + asm
 
@@ -177,7 +176,6 @@ def print_cpu_uops_yaml(cpu):
       if isfma:
         sig = 'm' if sig.find('m') != -1 else 'r'
 
-      # Cleanup signature to match LLVM opnames
       if asm.find("MOV") != -1:
         if asm.find("PMOVSX") != -1 or asm.find("PMOVZX") != -1 or asm.find("DUP") != -1:
           sig = 'r' + sig
@@ -191,7 +189,7 @@ def print_cpu_uops_yaml(cpu):
       if asm.find("ROUNDS") != -1:
         sig = 'mi' if sig.find('m') != -1 else 'ri'
 
-      if asm.find('F128') != -1 or asm.find('I128') != -1:
+      if asm.find('INSERT') != -1 or asm.find('F128') != -1 or asm.find('I128') != -1:
         asm = asm.removesuffix('Y')
         sig = sig.removesuffix('i')
 
