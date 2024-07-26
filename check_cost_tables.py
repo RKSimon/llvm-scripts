@@ -500,6 +500,20 @@ def int_ternaryintrinsics(maxwidth, ops, cpus):
           run_analysis(f"{type} %a0, {type} %a1, {type} %a2", type, cmd, op, op, cpus, declaration)
 
 
+def int_overflowintrinsics(maxwidth, ops, cpus):
+  for op in ops:
+    for basewidth in [8, 16, 32, 64]:
+      for elementcount in [2, 4, 8, 16, 32, 64]:
+        if (basewidth * elementcount) <= maxwidth:
+          type = get_type(elementcount, f"i{basewidth}")
+          ctype = get_type(elementcount, f"i1")
+          rtype = f"{{{type}, {ctype}}}"
+          stub = get_typeistub(elementcount, basewidth)
+          cmd = f"%result = call {rtype} @llvm.{op}.{stub}({type} %a0, {type} %a1)"
+          declaration = f"declare {rtype} @llvm.{op}.{stub}({type}, {type})"
+          run_analysis(f"{type} %a0, {type} %a1", rtype, cmd, op, op, cpus, declaration, usefence = elementcount > 0)
+
+
 def int_reductions(maxwidth, ops, cpus):
   for op in ops:
     for basewidth in [8, 16, 32, 64]:
@@ -631,6 +645,9 @@ def test_cpus(targetops, maxwidth, cpulevel, cpus):
 
   ops = filter_ops(targetops, ["sadd.sat", "ssub.sat", "uadd.sat", "usub.sat"])
   int_binaryintrinsics(maxwidth, ops, cpus)
+
+  ops = filter_ops(targetops, ["sadd.with.overflow", "ssub.with.overflow", "smul.with.overflow", "uadd.with.overflow", "usub.with.overflow", "umul.with.overflow"])
+  int_overflowintrinsics(maxwidth, ops, cpus)
 
   # TODO - uniform / constant shift amount costs
   ops = filter_ops(targetops, ["fshl", "fshr"])
