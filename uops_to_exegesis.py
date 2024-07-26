@@ -123,14 +123,6 @@ def print_cpu_uops_yaml(cpu):
       isstore = asm.startswith("{store}")
       asm = asm.removeprefix("{store}").lstrip()
 
-      if asm.find("MOV") != -1:
-        if asm.find("PMOVSX") != -1 or asm.find("PMOVZX") != -1 or asm.find("DUP") != -1:
-          sig += 'r'
-
-      # Cleanup signature to match LLVM opnames
-      if asm.find("ABS") != -1 or asm.find("HMINPOS") != -1:
-        sig += 'r'
-
       first = True
       fail = False
       for operandNode in instrNode.iter('operand'):
@@ -185,8 +177,17 @@ def print_cpu_uops_yaml(cpu):
       if isfma:
         sig = 'm' if sig.find('m') != -1 else 'r'
 
+      # Cleanup signature to match LLVM opnames
+      if asm.find("MOV") != -1:
+        if asm.find("PMOVSX") != -1 or asm.find("PMOVZX") != -1 or asm.find("DUP") != -1:
+          sig = 'r' + sig
+
+      if asm.find("ABS") != -1 or asm.find("HMINPOS") != -1:
+        sig = 'r' + sig
+
       if asm.find("RCPS") != -1 or asm.find("SQRTS") != -1:
         sig = 'm' if sig.find('m') != -1 else 'r'
+
       if asm.find("ROUNDS") != -1:
         sig = 'mi' if sig.find('m') != -1 else 'ri'
 
