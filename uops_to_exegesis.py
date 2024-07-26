@@ -8,27 +8,29 @@ class Error(Exception):
   """Simple exception type for erroring without a traceback."""
 
 # TODO: SNB/IVB
+def get_all_cpu_details():
+  return {
+    "bonnell"        : ["BNL", "bonnell", "AtomPort", 2],
+    "sandybridge"    : ["SNB", "sandybridge", "SBPort", 6],
+    "ivybridge"      : ["IVB", "ivybridge", "SBPort", 6],
+    "haswell"        : ["HSW", "haswell", "HWPort", 8],
+    "broadwell"      : ["BDW", "broadwell", "BWPort", 8],
+    "skylake"        : ["SKL", "skylake", "SKLPort", 8],
+    "skylake-avx512" : ["SKX", "skylake-avx512", "SKXPort", 8],
+    "cannonlake"     : ["CNL", "cannonlake", "SKXPort", 8],
+    "cascadelake"    : ["CLX", "cascadelake", "SKXPort", 8],
+    "icelake-server" : ["ICL", "icelake-server", "ICXPort", 10],
+    "rocketlake"     : ["RKL", "rocketlake", "ICXPort", 10],
+    "tigerlake"      : ["TGL", "tigerlake", "ICXPort", 10],
+    "alderlake"      : ["ADL-P", "alderlake", "ADLPPort", 12],
+    "znver1"         : ["ZEN+", "znver1", "ZnFPU", 4],
+    "znver2"         : ["ZEN2", "znver2", "Zn2FPU", 4],
+    "znver3"         : ["ZEN3", "znver3", "Zn3FP", 4],
+    "znver4"         : ["ZEN4", "znver4", "Zn4FP", 4]
+    }
+
 def get_cpu_details(cpu):
-   details = {
-      "bonnell"        : ["BNL", "bonnell", "AtomPort", 2],
-      "sandybridge"    : ["SNB", "sandybridge", "SBPort", 6],
-      "ivybridge"      : ["IVB", "ivybridge", "SBPort", 6],
-      "haswell"        : ["HSW", "haswell", "HWPort", 8],
-      "broadwell"      : ["BDW", "broadwell", "BWPort", 8],
-      "skylake"        : ["SKL", "skylake", "SKLPort", 8],
-      "skylake-avx512" : ["SKX", "skylake-avx512", "SKXPort", 8],
-      "cannonlake"     : ["CNL", "cannonlake", "SKXPort", 8],
-      "cascadelake"    : ["CLX", "cascadelake", "SKXPort", 8],
-      "icelake-server" : ["ICL", "icelake-server", "ICXPort", 10],
-      "rocketlake"     : ["RKL", "rocketlake", "ICXPort", 10],
-      "tigerlake"      : ["TGL", "tigerlake", "ICXPort", 10],
-      "alderlake"      : ["ADL-P", "alderlake", "ADLPPort", 12],
-      "znver1"         : ["ZEN+", "znver1", "ZnFPU", 4],
-      "znver2"         : ["ZEN2", "znver2", "Zn2FPU", 4],
-      "znver3"         : ["ZEN3", "znver3", "Zn3FP", 4],
-      "znver4"         : ["ZEN4", "znver4", "Zn4FP", 4]
-      }
-   return details.get(cpu)
+  return get_all_cpu_details().get(cpu)
 
 def distribute_pressure(pressure, ports, group):
   if len(group) == 1:
@@ -241,20 +243,19 @@ def main():
   parser.add_argument(
     '-cpu', '-mcpu',
     default='haswell',
-    help='Target CPU',
+    choices=get_all_cpu_details().keys(),
+    help='Target CPU (default=haswell)',
   )
   parser.add_argument(
     '-mode',
     default='uops',
     choices=['uops', 'inverse_throughput', 'latency'],
-    help='Capture Mode',
+    help='Capture Mode (default=uops)',
   )
   args = parser.parse_args()
 
-  if get_cpu_details(args.cpu) is None:
-    raise Error(f"Unknown cpu: {args.cpu}")
-
-  print_cpu_uops_yaml(args.cpu)
+  if args.mode == 'uops':
+    print_cpu_uops_yaml(args.cpu)
 
 if __name__ == "__main__":
     main()
