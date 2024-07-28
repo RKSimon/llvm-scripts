@@ -97,8 +97,6 @@ def print_cpu_uops_yaml(cpu):
         continue
       if asm.find("LDDQU") != -1 or asm.find("MXCSR") != -1:
         continue
-      if asm.find("CRC") != -1:
-        continue
       if asm.find("CVT") != -1:
         continue
       if asm.find("MOV") != -1:
@@ -109,6 +107,7 @@ def print_cpu_uops_yaml(cpu):
       if not any(x.attrib['name'] == cpuname for x in archs):
         continue;
 
+      iscrc32 = asm.find("CRC32") != -1
       ismmx = instrNode.attrib['category'] in ['MMX'] or instrNode.attrib['extension'] in ['MMX']
       issse = instrNode.attrib['extension'] in ['SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4', 'SSE4a']
       issse4a = instrNode.attrib['extension'] in ['SSE4a']
@@ -167,6 +166,9 @@ def print_cpu_uops_yaml(cpu):
         else:
           fail = True
           continue;
+
+        if iscrc32:
+          sig += operandNode.attrib.get('width', '')
 
         first = False
 
