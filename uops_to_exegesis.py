@@ -21,7 +21,7 @@ def get_all_cpu_details():
     "icelake-server" : ["ICL", "icelake-server", ("ICXPort0", "ICXPort1", "ICXPort2", "ICXPort3", "ICXPort4", "ICXPort5", "ICXPort6", "ICXPort7", "ICXPort8", "ICXPort9")],
     "rocketlake"     : ["RKL", "rocketlake", ("ICXPort0", "ICXPort1", "ICXPort2", "ICXPort3", "ICXPort4", "ICXPort5", "ICXPort6", "ICXPort7", "ICXPort8", "ICXPort9")],
     "tigerlake"      : ["TGL", "tigerlake", ("ICXPort0", "ICXPort1", "ICXPort2", "ICXPort3", "ICXPort4", "ICXPort5", "ICXPort6", "ICXPort7", "ICXPort8", "ICXPort9")],
-    "alderlake"      : ["ADL-P", "alderlake", ("ADLPPort00", "ADLPPort01", "ADLPPort02", "ADLPPort03", "ADLPPort04", "ADLPPort05", "ADLPPort06", "ADLPPort07", "ADLPPort08", "ADLPPort09", "ADLPPort10", "ADLPPort11")],
+    "alderlake"      : ["ADL-P", "alderlake", ("ADLPPort00", "ADLPPort01", "ADLPPort02", "ADLPPort03", "ADLPPort04", "ADLPPort05", "ADLPPort06", "ADLPPort07", "ADLPPort08", "ADLPPort09", "ADLPPort11", "ADLPPort10")],
     "znver1"         : ["ZEN+", "znver1", ("ZnFPU0", "ZnFPU1", "ZnFPU2", "ZnFPU3")],
     "znver2"         : ["ZEN2", "znver2", ("Zn2FPU0", "Zn2FPU1", "Zn2FPU2", "Zn2FPU3")],
     "znver3"         : ["ZEN3", "znver3", ("Zn3FP0", "Zn3FP1", "Zn3FP2", "Zn3FP3", "Zn3FP45", "Zn3FP45")],
