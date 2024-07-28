@@ -95,7 +95,7 @@ def print_cpu_uops_yaml(cpu):
         continue
       if asm.find("PEXTR") != -1:
         continue
-      if asm.find("LDDQU") != -1 or asm.find("MXCSR") != -1:
+      if asm.find("LDDQU") != -1:
         continue
       if asm.find("CVT") != -1:
         continue
@@ -177,7 +177,7 @@ def print_cpu_uops_yaml(cpu):
         continue;
 
       # Cleanup signature to match LLVM opnames
-      if isprefetch:
+      if isprefetch or asm.find("MXCSR") != -1:
         size = ''
         sig = ''
 
