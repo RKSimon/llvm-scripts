@@ -93,7 +93,7 @@ def print_cpu_uops_yaml(cpu):
       # TODO: Broken instructions (don't follow the standard naming convention)
       if asm.find("EXTRACT") != -1:
         continue
-      if asm.find("PEXTR") != -1 or asm.find("PINSR") != -1:
+      if asm.find("PEXTR") != -1:
         continue
       if asm.find("LDDQU") != -1 or asm.find("MXCSR") != -1:
         continue
@@ -204,7 +204,7 @@ def print_cpu_uops_yaml(cpu):
       if asm.find("ROUNDS") != -1:
         sig = 'mi' if sig.find('m') != -1 else 'ri'
 
-      if asm.find('INSERT') != -1:
+      if asm.find('INSERT') != -1 or asm.find('PINSR') != -1:
         sig = sig.removesuffix('i')
 
       if asm.find("BROADCAST") != -1:
