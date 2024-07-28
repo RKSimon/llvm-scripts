@@ -95,8 +95,6 @@ def print_cpu_uops_yaml(cpu):
         continue
       if asm.find("PEXTR") != -1:
         continue
-      if asm.find("LDDQU") != -1:
-        continue
       if asm.find("CVT") != -1:
         continue
       if asm.find("MOV") != -1:
@@ -194,6 +192,9 @@ def print_cpu_uops_yaml(cpu):
       if asm.find("MOV") != -1:
         if asm.find("PMOVSX") != -1 or asm.find("PMOVZX") != -1 or asm.find("DUP") != -1:
           sig = 'r' + sig
+
+      if asm.find("LDDQU") != -1:
+        sig = 'r' + sig
 
       if asm.find("ABS") != -1 or asm.find("HMINPOS") != -1:
         sig = 'r' + sig
