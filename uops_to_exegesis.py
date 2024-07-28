@@ -93,7 +93,7 @@ def print_cpu_uops_yaml(cpu):
       # TODO: Broken instructions (don't follow the standard naming convention)
       if asm.find("EXTRACT") != -1:
         continue
-      if asm.find("PEXTR") != -1 or asm.find("PINSR") != -1 or asm.find("PREFETCH") != -1:
+      if asm.find("PEXTR") != -1 or asm.find("PINSR") != -1:
         continue
       if asm.find("LDDQU") != -1 or asm.find("MXCSR") != -1:
         continue
@@ -108,6 +108,7 @@ def print_cpu_uops_yaml(cpu):
         continue;
 
       iscrc32 = asm.find("CRC32") != -1
+      isprefetch = instrNode.attrib['category'] in ['PREFETCH']
       ismmx = instrNode.attrib['category'] in ['MMX'] or instrNode.attrib['extension'] in ['MMX']
       issse = instrNode.attrib['extension'] in ['SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4', 'SSE4a']
       issse4a = instrNode.attrib['extension'] in ['SSE4a']
@@ -173,9 +174,13 @@ def print_cpu_uops_yaml(cpu):
         first = False
 
       if fail:
-         continue;
+        continue;
 
       # Cleanup signature to match LLVM opnames
+      if isprefetch:
+        size = ''
+        sig = ''
+
       if ismmx:
          asm = "MMX_" + asm
 
