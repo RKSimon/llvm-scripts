@@ -82,6 +82,7 @@ def print_cpu_uops_yaml(cpu):
          continue
 
       asm = instrNode.attrib['asm']
+      size = ''
       sig = ''
       args = ''
 
@@ -94,7 +95,7 @@ def print_cpu_uops_yaml(cpu):
         continue
       if asm.find("PEXTR") != -1 or asm.find("PINSR") != -1 or asm.find("PREFETCH") != -1:
         continue
-      if asm.find("BROADCAST") != -1 or asm.find("LDDQU") != -1 or asm.find("MXCSR") != -1:
+      if asm.find("LDDQU") != -1 or asm.find("MXCSR") != -1:
         continue
       if asm.find("CRC") != -1:
         continue
@@ -141,6 +142,11 @@ def print_cpu_uops_yaml(cpu):
           args += 'i_0x1 '
 
         if operandNode.attrib.get('r', '0') == '0':
+          if operandNode.attrib.get('w', '1') == '1':
+            if operandNode.attrib.get('width', '128') == '256':
+              size = 'Y'
+            elif operandNode.attrib.get('width', '128') == '512':
+              size = 'Z'
           continue;
 
         if first:
@@ -148,7 +154,9 @@ def print_cpu_uops_yaml(cpu):
             sig += operandNode.attrib.get('width', '')
             sig += 'r'
           elif operandNode.attrib.get('width', '128') == '256':
-            asm += 'Y'
+            size = 'Y'
+          elif operandNode.attrib.get('width', '128') == '512':
+            size = 'Z'
 
         if operandNode.attrib['type'] == 'reg':
           sig += 'r'
@@ -189,8 +197,14 @@ def print_cpu_uops_yaml(cpu):
       if asm.find("ROUNDS") != -1:
         sig = 'mi' if sig.find('m') != -1 else 'ri'
 
-      if asm.find('INSERT') != -1 or asm.find('F128') != -1 or asm.find('I128') != -1:
-        asm = asm.removesuffix('Y')
+      if asm.find('INSERT') != -1:
+        sig = sig.removesuffix('i')
+
+      if asm.find("BROADCAST") != -1:
+        sig = 'r' + sig
+
+      if asm.find('F128') != -1 or asm.find('I128') != -1:
+        size = ''
         sig = sig.removesuffix('i')
 
       # SSE BLENDV xmm0 hack
@@ -243,7 +257,7 @@ def print_cpu_uops_yaml(cpu):
       print(f"mode:            uops")
       print(f"key:")
       print(f"  instructions:")
-      print(f"    - '{asm}{sig} {args}'")
+      print(f"    - '{asm}{size}{sig} {args}'")
       print(f"  config:          ''")
       print(f"  register_initial_values:")
       print(f"    - 'XMM0=0x0'")
