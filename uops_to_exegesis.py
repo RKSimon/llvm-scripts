@@ -120,10 +120,10 @@ def print_cpu_uops_yaml(cpu):
       isstore = asm.startswith("{store}")
       asm = asm.removeprefix("{store}").lstrip()
 
-      first = True
       fail = False
       for operandNode in instrNode.iter('operand'):
         operandIdx = int(operandNode.attrib['idx'])
+        first = operandIdx == 1
 
         if operandNode.attrib.get('suppressed', '0') == '1':
           continue;
@@ -139,22 +139,16 @@ def print_cpu_uops_yaml(cpu):
         elif operandNode.attrib['type'] == 'imm':
           args += 'i_0x1 '
 
-        if operandNode.attrib.get('r', '0') == '0':
-          if operandNode.attrib.get('w', '1') == '1':
-            if operandNode.attrib.get('width', '128') == '256':
-              size = 'Y'
-            elif operandNode.attrib.get('width', '128') == '512':
-              size = 'Z'
-          continue;
-
         if first:
           if asm.find("POPCNT") != -1:
-            sig += operandNode.attrib.get('width', '')
-            sig += 'r'
-          elif operandNode.attrib.get('width', '128') == '256':
-            size = 'Y'
-          elif operandNode.attrib.get('width', '128') == '512':
-            size = 'Z'
+            size = operandNode.attrib.get('width', '')
+          elif operandNode.attrib.get('r', '0') == '0':
+            if operandNode.attrib.get('w', '1') == '1':
+              if operandNode.attrib.get('width', '128') == '256':
+                size = 'Y'
+              elif operandNode.attrib.get('width', '128') == '512':
+                size = 'Z'
+            continue;
 
         if operandNode.attrib['type'] == 'reg':
           sig += 'r'
@@ -168,8 +162,6 @@ def print_cpu_uops_yaml(cpu):
 
         if iscrc32:
           sig += operandNode.attrib.get('width', '')
-
-        first = False
 
       if fail:
         continue;
