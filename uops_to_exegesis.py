@@ -91,10 +91,6 @@ def print_cpu_uops_yaml(cpu):
         continue
 
       # TODO: Broken instructions (don't follow the standard naming convention)
-      if asm.find("EXTRACT") != -1:
-        continue
-      if asm.find("PEXTR") != -1:
-        continue
       if asm.find("CVT") != -1:
         continue
       if asm.find("MOV") != -1:
@@ -107,6 +103,7 @@ def print_cpu_uops_yaml(cpu):
 
       iscrc32 = asm.find("CRC32") != -1
       isprefetch = instrNode.attrib['category'] in ['PREFETCH']
+      isextract = asm.find('PEXTR') != -1 or asm.find("EXTRACT") != -1
       ismmx = instrNode.attrib['category'] in ['MMX'] or instrNode.attrib['extension'] in ['MMX']
       issse = instrNode.attrib['extension'] in ['SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4', 'SSE4a']
       issse4a = instrNode.attrib['extension'] in ['SSE4a']
@@ -148,7 +145,8 @@ def print_cpu_uops_yaml(cpu):
                 size = 'Y'
               elif operandNode.attrib.get('width', '128') == '512':
                 size = 'Z'
-            continue;
+            if not isextract:
+              continue;
 
         if operandNode.attrib['type'] == 'reg':
           sig += 'r'
@@ -197,7 +195,7 @@ def print_cpu_uops_yaml(cpu):
       if asm.find("ROUNDS") != -1:
         sig = 'mi' if sig.find('m') != -1 else 'ri'
 
-      if asm.find('INSERT') != -1 or asm.find('PINSR') != -1:
+      if asm.find('INSERT') != -1 or asm.find('PINSR') != -1 or asm.find('EXTRACT') != -1 or asm.find('PEXTR') != -1:
         sig = sig.removesuffix('i')
 
       if asm.find("BROADCAST") != -1:
