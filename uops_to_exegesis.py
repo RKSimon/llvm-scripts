@@ -91,8 +91,6 @@ def print_cpu_uops_yaml(cpu):
         continue
 
       # TODO: Broken instructions (don't follow the standard naming convention)
-      if asm.find("CVT") != -1:
-        continue
       if asm.find("MOV") != -1:
         if asm.find("SX") == -1 and asm.find("ZX") == -1 and asm.find("DUP") == -1:
           continue
@@ -103,6 +101,7 @@ def print_cpu_uops_yaml(cpu):
 
       iscrc32 = asm.find("CRC32") != -1
       isprefetch = instrNode.attrib['category'] in ['PREFETCH']
+      isconvert = instrNode.attrib['category'] in ['CONVERT']
       isextract = asm.find('PEXTR') != -1 or asm.find("EXTRACT") != -1
       ismmx = instrNode.attrib['category'] in ['MMX'] or instrNode.attrib['extension'] in ['MMX']
       issse = instrNode.attrib['extension'] in ['SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4', 'SSE4a']
@@ -118,6 +117,8 @@ def print_cpu_uops_yaml(cpu):
       asm = asm.removeprefix("{store}").lstrip()
 
       fail = False
+      srcwidth = None
+      dstwidth = None
       for operandNode in instrNode.iter('operand'):
         operandIdx = int(operandNode.attrib['idx'])
         first = operandIdx == 1
@@ -136,6 +137,19 @@ def print_cpu_uops_yaml(cpu):
         elif operandNode.attrib['type'] == 'imm':
           args += 'i_0x1 '
 
+        if isconvert:
+          xtype = operandNode.attrib.get('xtype')
+          xtype = xtype.removeprefix('i').removeprefix('f')
+          if operandIdx == 1:
+            dstwidth = int(xtype)
+          if operandIdx == 2:
+            srcwidth = int(xtype)
+            if srcwidth > dstwidth:
+              if operandNode.attrib.get('width', '128') == '256':
+                size = 'Y'
+              elif operandNode.attrib.get('width', '128') == '512':
+                size = 'Z'
+
         if first:
           if asm.find("POPCNT") != -1:
             size = operandNode.attrib.get('width', '')
@@ -145,7 +159,9 @@ def print_cpu_uops_yaml(cpu):
                 size = 'Y'
               elif operandNode.attrib.get('width', '128') == '512':
                 size = 'Z'
-            if not isextract:
+            if not isextract and not isconvert:
+              continue;
+            if isconvert and (asm.find("2SD") != -1 or asm.find("2SS") != -1):
               continue;
 
         if operandNode.attrib['type'] == 'reg':
@@ -169,7 +185,7 @@ def print_cpu_uops_yaml(cpu):
         size = ''
         sig = ''
 
-      if ismmx:
+      if ismmx or (isconvert and (asm.find("PI2") != -1 or asm.find("2PI") != -1)):
          asm = "MMX_" + asm
 
       if issse4a:
