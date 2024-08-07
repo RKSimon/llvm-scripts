@@ -311,6 +311,19 @@ def fp_binaryintrinsics(maxwidth, ops, cpus):
           declaration = f"declare {type} @llvm.{op}.{stub}({type}, {type})"
           run_analysis(f"{type} %a0", type, cmd, op, op, cpus, declaration)
 
+def fp_satintrinsics(maxwidth, ops, cpus):
+  for op in ops:
+    for basewidth in [32, 64]:
+      for elementcount in [0, 2, 4, 8, 16]:
+        if 128 <= (basewidth * elementcount) and (basewidth * elementcount) <= maxwidth:
+          ftype = get_type(elementcount, get_float_string(basewidth))
+          itype = get_type(elementcount, f"i{basewidth}")
+          fstub = get_typefstub(elementcount, basewidth)
+          istub = get_typeistub(elementcount, basewidth)
+          cmd = f"%result = call {itype} @llvm.{op}.{istub}.{fstub}({ftype} %a0)"
+          declaration = f"declare {itype} @llvm.{op}.{istub}.{fstub}({ftype})"
+          run_analysis(f"{ftype} %a0", itype, cmd, op, op, cpus, declaration)
+
 def int_cast(maxwidth, ops, cpus):
   for op in ops:
     for srcbasewidth in [8, 16, 32, 64]:
@@ -598,6 +611,9 @@ def test_cpus(targetops, maxwidth, cpulevel, cpus):
   # TODO - copysign, maxnum, maxinum, minnum, mininum
   ops = filter_ops(targetops, ["maxnum", "minnum"])
   fp_binaryintrinsics(maxwidth, ops, cpus)
+
+  ops = filter_ops(targetops, ["fptosi.sat", "fptoui.sat"])
+  fp_satintrinsics(maxwidth, ops, cpus)
 
   # TODO - reduction op filtering
   # if len(targetops) == 0 or "reduce" in targetops:
