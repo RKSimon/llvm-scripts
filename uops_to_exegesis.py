@@ -99,6 +99,7 @@ def print_cpu_uops_yaml(cpu):
       if not any(x.attrib['name'] == cpuname for x in archs):
         continue;
 
+      ismov = asm.find("MOV") != -1
       iscrc32 = asm.find("CRC32") != -1
       isprefetch = instrNode.attrib['category'] in ['PREFETCH']
       isconvert = instrNode.attrib['category'] in ['CONVERT']
@@ -195,7 +196,7 @@ def print_cpu_uops_yaml(cpu):
       if isfma:
         sig = 'm' if sig.find('m') != -1 else 'r'
 
-      if asm.find("MOV") != -1:
+      if ismov:
         if asm.find("PMOVSX") != -1 or asm.find("PMOVZX") != -1 or asm.find("DUP") != -1:
           sig = 'r' + sig
 
