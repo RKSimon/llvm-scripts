@@ -92,7 +92,7 @@ def print_cpu_uops_yaml(cpu):
 
       # TODO: Broken instructions (don't follow the standard naming convention)
       if asm.find("MOV") != -1:
-        if asm.find("SX") == -1 and asm.find("ZX") == -1 and asm.find("DUP") == -1:
+        if asm.find("SX") == -1 and asm.find("ZX") == -1 and asm.find("DUP") == -1 and asm.find("VMASKMOV") == -1:
           continue
 
       archs = instrNode.iter('architecture')
@@ -199,6 +199,11 @@ def print_cpu_uops_yaml(cpu):
       if ismov:
         if asm.find("PMOVSX") != -1 or asm.find("PMOVZX") != -1 or asm.find("DUP") != -1:
           sig = 'r' + sig
+        if asm.find("MASKMOV") != -1 :
+          sig = 'mr' if sig == 'rr' else sig
+        if asm.find("MASKMOVDQU") != -1:
+          size = '64'
+          sig = ''
 
       if asm.find("LDDQU") != -1:
         sig = 'r' + sig
