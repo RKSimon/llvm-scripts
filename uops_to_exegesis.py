@@ -97,7 +97,7 @@ def print_cpu_uops_yaml(cpu):
 
       archs = instrNode.iter('architecture')
       if not any(x.attrib['name'] == cpuname for x in archs):
-        continue;
+        continue
 
       ismov = asm.find("MOV") != -1
       iscrc32 = asm.find("CRC32") != -1
@@ -125,7 +125,7 @@ def print_cpu_uops_yaml(cpu):
         first = operandIdx == 1
 
         if operandNode.attrib.get('suppressed', '0') == '1':
-          continue;
+          continue
 
         if operandNode.attrib['type'] == 'reg':
           registers = operandNode.text.split(',')
@@ -161,9 +161,9 @@ def print_cpu_uops_yaml(cpu):
               elif operandNode.attrib.get('width', '128') == '512':
                 size = 'Z'
             if not isextract and not isconvert:
-              continue;
+              continue
             if isconvert and (asm.find("2SD") != -1 or asm.find("2SS") != -1):
-              continue;
+              continue
 
         if operandNode.attrib['type'] == 'reg':
           sig += 'r'
@@ -173,13 +173,13 @@ def print_cpu_uops_yaml(cpu):
           sig += 'm'
         else:
           fail = True
-          continue;
+          continue
 
         if iscrc32:
           sig += operandNode.attrib.get('width', '')
 
       if fail:
-        continue;
+        continue
 
       # Cleanup signature to match LLVM opnames
       if isprefetch or asm.find("MXCSR") != -1:
@@ -235,7 +235,7 @@ def print_cpu_uops_yaml(cpu):
       uops = None
       for archNode in instrNode.iter('architecture'):
          if archNode.attrib['name'] != cpuname:
-            continue;
+            continue
 
          for measureNode in archNode.iter('measurement'):
             uops = float(measureNode.attrib['uops'])
@@ -243,10 +243,10 @@ def print_cpu_uops_yaml(cpu):
                portlist = measureNode.attrib['ports']
 
       if portlist is None or uops is None:
-         fail = True;
+         fail = True
 
       if fail:
-         continue;
+         continue
 
       # ports="1*p01+1*p23"
       ops = list()
