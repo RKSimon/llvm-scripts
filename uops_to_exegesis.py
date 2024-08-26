@@ -128,15 +128,19 @@ def print_cpu_uops_yaml(cpu):
         if operandNode.attrib.get('suppressed', '0') == '1':
           continue
 
-        if operandNode.attrib['type'] == 'reg':
+        isreg = operandNode.attrib['type'] == 'reg'
+        ismem = operandNode.attrib['type'] == 'mem'
+        isimm = operandNode.attrib['type'] == 'imm'
+
+        if isreg:
           registers = operandNode.text.split(',')
           register = registers[min(operandIdx, len(registers)-1)]
           args += register + ' '
           if first and (ismmx or issse):
             args += register + ' '
-        elif operandNode.attrib['type'] == 'mem':
+        elif ismem:
           args += 'RDI i_0x1 %noreg '
-        elif operandNode.attrib['type'] == 'imm':
+        elif isimm:
           args += 'i_0x1 '
 
         if isconvert:
@@ -166,11 +170,11 @@ def print_cpu_uops_yaml(cpu):
             if isconvert and (asm.find("2SD") != -1 or asm.find("2SS") != -1):
               continue
 
-        if operandNode.attrib['type'] == 'reg':
+        if isreg:
           sig += 'r'
-        elif operandNode.attrib['type'] == 'imm':
+        elif isimm:
           sig += 'i'
-        elif operandNode.attrib['type'] == 'mem':
+        elif ismem:
           sig += 'm'
         else:
           fail = True
