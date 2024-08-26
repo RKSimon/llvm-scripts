@@ -194,13 +194,6 @@ def print_cpu_uops_yaml(cpu):
       if ismmx or (isconvert and (asm.find("PI2") != -1 or asm.find("2PI") != -1)):
          asm = "MMX_" + asm
 
-      if issse4a:
-        asm += 'I' if sig.find('i') != -1  else ''
-        sig = ''
-
-      if isfma:
-        sig = 'm' if sig.find('m') != -1 else 'r'
-
       if ismov:
         if asm.find("PMOVSX") != -1 or asm.find("PMOVZX") != -1 or asm.find("DUP") != -1:
           sig = 'r' + sig
@@ -231,6 +224,13 @@ def print_cpu_uops_yaml(cpu):
       if asm.find('F128') != -1 or asm.find('I128') != -1:
         size = ''
         sig = sig.removesuffix('i')
+
+      if issse4a:
+        asm += 'I' if sig.find('i') != -1  else ''
+        sig = ''
+
+      if isfma:
+        sig = 'm' if sig.find('m') != -1 else 'r'
 
       # SSE BLENDV xmm0 hack
       if asm.startswith("BLENDV") or asm.startswith("PBLENDV"):
