@@ -283,7 +283,7 @@ def print_cpu_uops_yaml(cpu):
       print(f"key:")
       print(f"  instructions:")
       print(f"    - '{asm}{size}{sig} {args}'")
-      print(f"  config:          '{iform}'")
+      print(f"  config:          ''")
       print(f"  register_initial_values:")
       print(f"    - 'XMM0=0x0'")
       print(f"    - 'MXCSR=0x0'")
@@ -295,7 +295,7 @@ def print_cpu_uops_yaml(cpu):
          print(f"  - {{ key: {portname}, value: {portpressure}, per_snippet_value: {portpressure} }}")
       print(f"  - {{ key: NumMicroOps, value: {uops}, per_snippet_value: {uops} }}")
       print(f"error:           ''")
-      print(f"info:            instruction is serial, repeating a random one.")
+      print(f"info:            '{iform}'")
       print(f"assembled_snippet: B0004883EC08C7042400000000C7442404000000009D37373737C3")
       print(f"...")
 
