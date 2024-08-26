@@ -81,6 +81,7 @@ def print_cpu_uops_yaml(cpu):
       if any(x in instrNode.attrib['isa-set'] for x in ['FP16']):
          continue
 
+      iform = instrNode.attrib['iform']
       asm = instrNode.attrib['asm']
       size = ''
       sig = ''
@@ -278,7 +279,7 @@ def print_cpu_uops_yaml(cpu):
       print(f"key:")
       print(f"  instructions:")
       print(f"    - '{asm}{size}{sig} {args}'")
-      print(f"  config:          ''")
+      print(f"  config:          '{iform}'")
       print(f"  register_initial_values:")
       print(f"    - 'XMM0=0x0'")
       print(f"    - 'MXCSR=0x0'")
