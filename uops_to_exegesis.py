@@ -81,6 +81,7 @@ def print_cpu_uops_yaml(cpu):
       if any(x in instrNode.attrib['isa-set'] for x in ['FP16']):
          continue
 
+      iclass = instrNode.attrib['iclass']
       iform = instrNode.attrib['iform']
       asm = instrNode.attrib['asm']
       size = ''
@@ -92,15 +93,17 @@ def print_cpu_uops_yaml(cpu):
         continue
 
       # TODO: Broken instructions (don't follow the standard naming convention)
-      if asm.find("MOV") != -1:
-        if asm.find("SX") == -1 and asm.find("ZX") == -1 and asm.find("DUP") == -1 and asm.find("VMASKMOV") == -1:
-          continue
+
+      # TODO: Handle weird LLVM GPR<->XMM instruction names
+      if iclass.find('MOVD') != -1 or iclass.find('MOVQ') != -1 or iclass.find('MOVSS') != -1 or iclass.find('MOVSD') != -1:
+        continue
 
       archs = instrNode.iter('architecture')
       if not any(x.attrib['name'] == cpuname for x in archs):
         continue
 
       ismov = asm.find("MOV") != -1
+      ismaskmov = asm.find("MASKMOV") != -1
       iscrc32 = asm.find("CRC32") != -1
       isprefetch = instrNode.attrib['category'] in ['PREFETCH']
       isconvert = instrNode.attrib['category'] in ['CONVERT']
@@ -142,6 +145,16 @@ def print_cpu_uops_yaml(cpu):
           args += 'RDI i_0x1 %noreg '
         elif isimm:
           args += 'i_0x1 '
+
+        if ismov and not ismaskmov:
+          opwidth = operandNode.attrib.get('width', None)
+          if opwidth is not None:
+            if operandIdx == 1:
+              dstwidth = int(opwidth)
+              isstore = ismem
+            if operandIdx == 2:
+              srcwidth = int(opwidth)
+              isload = ismem
 
         if isconvert:
           xtype = operandNode.attrib.get('xtype')
@@ -195,13 +208,19 @@ def print_cpu_uops_yaml(cpu):
          asm = "MMX_" + asm
 
       if ismov:
-        if asm.find("PMOVSX") != -1 or asm.find("PMOVZX") != -1 or asm.find("DUP") != -1:
+        if asm.find("PMOVSX") != -1 or asm.find("PMOVZX") != -1 or asm.find("DUP") != -1 or asm.find("MOVMSK") != -1:
           sig = 'r' + sig
-        if asm.find("MASKMOV") != -1 :
-          sig = 'mr' if sig == 'rr' else sig
-        if asm.find("MASKMOVDQU") != -1:
+        elif asm.find("MASKMOVDQU") != -1 or asm.find("MMX_MASKMOVQ") != -1:
           size = '64'
           sig = ''
+        elif ismaskmov:
+          sig = 'mr' if sig == 'rr' else sig
+        elif isstore:
+          sig = 'mr'
+        elif isload:
+          sig = 'rm' if sig.find('m') != -1 else 'rr'
+        elif sig == 'r':
+          sig = 'rr'
 
       if asm.find("LDDQU") != -1:
         sig = 'r' + sig
