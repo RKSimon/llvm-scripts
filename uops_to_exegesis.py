@@ -305,6 +305,9 @@ def print_cpu_uops_yaml(cpu):
 
          for measureNode in archNode.iter('measurement'):
             uops = float(measureNode.attrib['uops'])
+            # TODO: Prefer uops_retire_slots (fused domain) uop count
+            #if measureNode.attrib.get('uops_retire_slots', None) is not None:
+            #   uops = min(uops, float(measureNode.attrib['uops_retire_slots']))
             if measureNode.attrib.get('ports', None) is not None:
                portlist = measureNode.attrib['ports']
 
