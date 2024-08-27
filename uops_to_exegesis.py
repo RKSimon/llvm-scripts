@@ -94,10 +94,6 @@ def print_cpu_uops_yaml(cpu):
 
       # TODO: Broken instructions (don't follow the standard naming convention)
 
-      # TODO: Handle weird LLVM GPR<->XMM instruction names
-      if iclass.find('MOVD') != -1 or iclass.find('MOVQ') != -1 or iclass.find('MOVSS') != -1 or iclass.find('MOVSD') != -1:
-        continue
-
       archs = instrNode.iter('architecture')
       if not any(x.attrib['name'] == cpuname for x in archs):
         continue
@@ -221,6 +217,52 @@ def print_cpu_uops_yaml(cpu):
           sig = 'rm' if sig.find('m') != -1 else 'rr'
         elif sig == 'r':
           sig = 'rr'
+
+        # Handle weird LLVM GPR<->XMM instruction names
+        movdict  = {
+          'MOVD_XMMdq_GPR32'    : 'MOVDI2PDI',
+          'MOVD_XMMdq_GPR32d'   : 'MOVDI2PDI',
+          'MOVD_XMMdq_MEMd'     : 'MOVDI2PDI',
+          'MOVD_GPR32_XMMd'     : 'MOVPDI2DI',
+          'MOVD_GPR32d_XMMd'    : 'MOVPDI2DI',
+          'MOVD_MEMd_XMMd'      : 'MOVPDI2DI',
+
+          'MOVQ_XMMdq_GPR64'    : 'MOV64toPQI',
+          'MOVQ_XMMdq_GPR64q'   : 'MOV64toPQI',
+          'MOVQ_XMMdq_MEMq'     : 'MOV64toPQI',
+          'MOVQ_GPR64_XMMq'     : 'MOVPQIto64',
+          'MOVQ_GPR64q_XMMq'    : 'MOVPQIto64',
+          'MOVD_MEMq_XMMq'      : 'MOVPQIto64',
+          'MOVQ_XMMdq_XMMq_7E'  : 'MOVZPQILo2PQI',
+          'MOVQ_XMMdq_MEMq_7E'  : 'MOVQI2PQI',
+          'MOVQ_XMMdq_XMMq_0F7E': 'MOVZPQILo2PQI',
+          'MOVQ_XMMdq_MEMq_0F7E': 'MOVQI2PQI',
+          'MOVQ_XMMdq_XMMq_D6'  : 'MOVPQI2QI',
+          'MOVQ_XMMdq_XMMq_0FD6': 'MOVPQI2QI',
+          'MOVQ_MEMq_XMMq_0FD6' : 'MOVPQI2QI',
+          'MOVQ_MEMq_XMMq_D6'   : 'MOVPQI2QI',
+
+          'MOVD_MMXq_GPR32'     : 'MMX_MOVD64',
+          'MOVD_GPR32_MMXd'     : 'MMX_MOVD64g',
+          'MOVD_MMXq_MEMd'      : 'MMX_MOVD64',
+          'MOVD_MEMd_MMXd'      : 'MMX_MOVD64',
+
+          'MOVQ_MMXq_GPR64'     : 'MMX_MOVD64to64',
+          'MOVQ_MMXq_MEMq'      : 'MMX_MOVD64to64',
+          'MOVQ_GPR64_MMXq'     : 'MMX_MOVD64from64',
+          'MOVQ_MEMq_MMXq'      : 'MMX_MOVD64from64',
+          'MOVQ_MMXq_MEMq_0F6F' : 'MMX_MOVQ64',
+          'MOVQ_MMXq_MMXq_0F6F' : 'MMX_MOVQ64',
+          'MOVQ_MEMq_MMXq_0F7F' : 'MMX_MOVQ64',
+          'MOVQ_MMXq_MMXq_0F7F' : 'MMX_MOVQ64',
+
+          'MOVQ2DQ_XMMdq_MMXq'  : 'MMX_MOVQ2DQ',
+          'MOVDQ2Q_MMXq_XMMq'   : 'MMX_MOVDQ2Q',
+        }
+        iform_prefix = 'V' if iform.startswith('V') else ''
+        iform_strip = iform.removeprefix('V')
+        if iform_strip in movdict:
+          asm = iform_prefix + movdict[iform_strip]
 
       if asm.find("LDDQU") != -1:
         sig = 'r' + sig
