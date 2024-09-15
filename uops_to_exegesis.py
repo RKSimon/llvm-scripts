@@ -76,7 +76,7 @@ def print_cpu_uops_yaml(cpu):
    [cpuname, cpumodel, portmap] = get_cpu_details(cpu)
 
    for instrNode in root.iter('instruction'):
-      if instrNode.attrib['extension'] not in ['BMI1', 'BMI2', 'LZCNT', 'MMX', 'SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4a', 'SSE4', 'AVX', 'AVX2', 'PCLMULQDQ', 'VPCLMULQDQ', 'FMA']:
+      if instrNode.attrib['extension'] not in ['BMI1', 'BMI2', 'LZCNT', 'MMX', 'SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4a', 'SSE4', 'AVX', 'AVX2', 'PCLMULQDQ', 'VPCLMULQDQ', 'F16C', 'FMA']:
          continue
       if any(x in instrNode.attrib['isa-set'] for x in ['FP16']):
          continue
@@ -109,6 +109,7 @@ def print_cpu_uops_yaml(cpu):
       ismmx = instrNode.attrib['category'] in ['MMX'] or instrNode.attrib['extension'] in ['MMX']
       issse = instrNode.attrib['extension'] in ['SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4', 'SSE4a']
       issse4a = instrNode.attrib['extension'] in ['SSE4a']
+      isf16c = instrNode.attrib['extension'] in ['F16C']
       isfma = instrNode.attrib['extension'] in ['FMA']
       isopmask = instrNode.attrib.get('mask', '0') == '1'
       iszeroing = instrNode.attrib.get('zeroing', '0') == '1'
@@ -135,6 +136,7 @@ def print_cpu_uops_yaml(cpu):
         isimm = operandNode.attrib['type'] == 'imm'
         isflags = operandNode.attrib['type'] == 'flags'
         opwidth = operandNode.attrib.get('width', None)
+        xtype = operandNode.attrib.get('xtype')
 
         if isreg:
           registers = operandNode.text.split(',')
@@ -156,8 +158,7 @@ def print_cpu_uops_yaml(cpu):
               srcwidth = int(opwidth)
               isload = ismem
 
-        if isconvert:
-          xtype = operandNode.attrib.get('xtype')
+        if isconvert and xtype is not None:
           xtype = xtype.removeprefix('i').removeprefix('f')
           if operandIdx == 1:
             dstwidth = int(xtype)
@@ -289,6 +290,9 @@ def print_cpu_uops_yaml(cpu):
 
       if asm.find("ROUNDS") != -1:
         sig = 'mi' if sig.find('m') != -1 else 'ri'
+
+      if isf16c:
+        sig = sig.removesuffix('i')
 
       if asm.find("BROADCAST") != -1:
         sig = 'r' + sig
