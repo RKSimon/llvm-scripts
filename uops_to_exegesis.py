@@ -276,15 +276,11 @@ def print_cpu_uops_yaml(cpu):
       if asm.find("ROUNDS") != -1:
         sig = 'mi' if sig.find('m') != -1 else 'ri'
 
-      if asm.find('INSERT') != -1 or asm.find('PINSR') != -1 or asm.find('EXTRACT') != -1 or asm.find('PEXTR') != -1:
-        sig = sig.removesuffix('i')
-
       if asm.find("BROADCAST") != -1:
         sig = 'r' + sig
 
       if asm.find('F128') != -1 or asm.find('I128') != -1:
         size = ''
-        sig = sig.removesuffix('i')
 
       if issse4a:
         asm += 'I' if sig.find('i') != -1  else ''
