@@ -76,7 +76,7 @@ def print_cpu_uops_yaml(cpu):
    [cpuname, cpumodel, portmap] = get_cpu_details(cpu)
 
    for instrNode in root.iter('instruction'):
-      if instrNode.attrib['extension'] not in ['BMI1', 'BMI2', 'LZCNT', 'MMX', 'SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4a', 'SSE4', 'AVX', 'AVX2', 'PCLMULQDQ', 'VPCLMULQDQ', 'F16C', 'FMA']:
+      if instrNode.attrib['extension'] not in ['BASE', 'BMI1', 'BMI2', 'LZCNT', 'MMX', 'SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4a', 'SSE4', 'AVX', 'AVX2', 'PCLMULQDQ', 'VPCLMULQDQ', 'F16C', 'FMA']:
          continue
       if any(x in instrNode.attrib['isa-set'] for x in ['FP16']):
          continue
@@ -93,6 +93,8 @@ def print_cpu_uops_yaml(cpu):
         continue
 
       # TODO: Broken instructions (don't follow the standard naming convention)
+      if asm.startswith(tuple(['LOCK','CMOV','ENTER','CMPXCHG','INVLPG','POP','PUSH','RET','SET','SLDT','STR','VER'])):
+        continue
 
       archs = instrNode.iter('architecture')
       if not any(x.attrib['name'] == cpuname for x in archs):
@@ -104,6 +106,7 @@ def print_cpu_uops_yaml(cpu):
       isprefetch = instrNode.attrib['category'] in ['PREFETCH']
       isconvert = instrNode.attrib['category'] in ['CONVERT']
       isextract = asm.find('PEXTR') != -1 or asm.find("EXTRACT") != -1
+      isbase = instrNode.attrib['extension'] in ['BASE']
       isbmi = instrNode.attrib['extension'] in ['BMI1','BMI2']
       islzcnt = instrNode.attrib['extension'] in ['LZCNT']
       ismmx = instrNode.attrib['category'] in ['MMX'] or instrNode.attrib['extension'] in ['MMX']
@@ -113,6 +116,7 @@ def print_cpu_uops_yaml(cpu):
       isfma = instrNode.attrib['extension'] in ['FMA']
       isopmask = instrNode.attrib.get('mask', '0') == '1'
       iszeroing = instrNode.attrib.get('zeroing', '0') == '1'
+      isshiftrotate = isbase and instrNode.attrib['category'] in ['ROTATE','SHIFT']
 
       isload = asm.startswith("{load}")
       asm = asm.removeprefix("{load}").lstrip()
@@ -142,12 +146,19 @@ def print_cpu_uops_yaml(cpu):
           registers = operandNode.text.split(',')
           register = registers[min(operandIdx, len(registers)-1)]
           args += register + ' '
-          if first and (ismmx or issse):
+          if first and (ismmx or issse or isbase):
             args += register + ' '
+          # TODO: Handle seg registers
+          if 'GS' in registers:
+            fail = True
         elif ismem:
           args += 'RDI i_0x1 %noreg '
         elif isimm:
           args += 'i_0x1 '
+
+        if isbase:
+          if size == '' and opwidth is not None:
+            dstwidth = size = opwidth
 
         if ismov and not ismaskmov:
           if opwidth is not None:
@@ -183,7 +194,7 @@ def print_cpu_uops_yaml(cpu):
                 size = 'Y'
               elif operandNode.attrib.get('width', '128') == '512':
                 size = 'Z'
-            if not isextract and not isconvert:
+            if not isbase and not isextract and not isconvert:
               continue
             if isconvert and (asm.find("2SD") != -1 or asm.find("2SS") != -1):
               continue
@@ -192,8 +203,17 @@ def print_cpu_uops_yaml(cpu):
           sig += 'r'
         elif isimm:
           sig += 'i'
+          if isbase and (opwidth == '8' or int(dstwidth) > int(opwidth)):
+            if asm == 'TEST' and opwidth == '8':
+              sig = sig # TODO
+            elif asm in ['SHLD','SHRD']:
+              sig += opwidth # TODO
+            elif not (isshiftrotate or asm in ['IN','OUT','MOV']):
+              sig += opwidth
         elif ismem:
           sig += 'm'
+        elif isflags:
+          continue
         else:
           fail = True
           continue
@@ -201,10 +221,21 @@ def print_cpu_uops_yaml(cpu):
         if iscrc32:
           sig += operandNode.attrib.get('width', '')
 
+      if isbase and (size == '' or int(size) > 64):
+        fail = True
+
       if fail:
         continue
 
       # Cleanup signature to match LLVM opnames
+      if isbase:
+        if asm.startswith(tuple(['MOVSX','MOVZX'])):
+          sig += opwidth
+        elif isshiftrotate and sig.endswith('r'):
+          sig = sig.removesuffix('r') + 'CL' # TODO
+        elif sig.startswith('m') and asm in ['XADD','XCHG']:
+          continue # TODO
+
       if isprefetch or asm.find("MXCSR") != -1:
         size = ''
         sig = ''
@@ -228,7 +259,7 @@ def print_cpu_uops_yaml(cpu):
           sig = 'mr' if sig == 'rr' else sig
         elif isstore:
           sig = 'mr'
-        elif isload:
+        elif isload and not isbase:
           sig = 'rm' if sig.find('m') != -1 else 'rr'
         elif sig == 'r':
           sig = 'rr'
