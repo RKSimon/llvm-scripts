@@ -76,7 +76,7 @@ def print_cpu_uops_yaml(cpu):
    [cpuname, cpumodel, portmap] = get_cpu_details(cpu)
 
    for instrNode in root.iter('instruction'):
-      if instrNode.attrib['extension'] not in ['BASE', 'BMI1', 'BMI2', 'LZCNT', 'MMX', 'SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4a', 'SSE4', 'AVX', 'AVX2', 'PCLMULQDQ', 'VPCLMULQDQ', 'F16C', 'FMA']:
+      if instrNode.attrib['extension'] not in ['BASE', 'ADOX_ADCX', 'BMI1', 'BMI2', 'LZCNT', 'MMX', 'SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4a', 'SSE4', 'AVX', 'AVX2', 'PCLMULQDQ', 'VPCLMULQDQ', 'F16C', 'FMA']:
          continue
       if any(x in instrNode.attrib['isa-set'] for x in ['FP16']):
          continue
@@ -107,6 +107,7 @@ def print_cpu_uops_yaml(cpu):
       isconvert = instrNode.attrib['category'] in ['CONVERT']
       isextract = asm.find('PEXTR') != -1 or asm.find("EXTRACT") != -1
       isbase = instrNode.attrib['extension'] in ['BASE']
+      isadx = instrNode.attrib['extension'] in ['ADOX_ADCX']
       isbmi = instrNode.attrib['extension'] in ['BMI1','BMI2']
       islzcnt = instrNode.attrib['extension'] in ['LZCNT']
       ismmx = instrNode.attrib['category'] in ['MMX'] or instrNode.attrib['extension'] in ['MMX']
@@ -147,7 +148,7 @@ def print_cpu_uops_yaml(cpu):
           registers = operandNode.text.split(',')
           register = registers[min(operandIdx, len(registers)-1)]
           args += register + ' '
-          if first and (ismmx or issse or isbase):
+          if first and (ismmx or issse or isbase or isadx):
             args += register + ' '
           if operandNode.attrib.get('implicit', '0') == '1' and register == 'CL':
             r_sig = register
@@ -160,7 +161,7 @@ def print_cpu_uops_yaml(cpu):
         elif isimm:
           args += 'i_0x1 '
 
-        if isbase:
+        if isbase or isadx:
           if size == '' and opwidth is not None:
             dstwidth = size = opwidth
 
