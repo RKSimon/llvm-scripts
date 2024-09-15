@@ -76,7 +76,7 @@ def print_cpu_uops_yaml(cpu):
    [cpuname, cpumodel, portmap] = get_cpu_details(cpu)
 
    for instrNode in root.iter('instruction'):
-      if instrNode.attrib['extension'] not in ['MMX', 'SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4a', 'SSE4', 'AVX', 'AVX2', 'PCLMULQDQ', 'VPCLMULQDQ', 'FMA']:
+      if instrNode.attrib['extension'] not in ['BMI1', 'BMI2', 'LZCNT', 'MMX', 'SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4a', 'SSE4', 'AVX', 'AVX2', 'PCLMULQDQ', 'VPCLMULQDQ', 'FMA']:
          continue
       if any(x in instrNode.attrib['isa-set'] for x in ['FP16']):
          continue
@@ -104,6 +104,8 @@ def print_cpu_uops_yaml(cpu):
       isprefetch = instrNode.attrib['category'] in ['PREFETCH']
       isconvert = instrNode.attrib['category'] in ['CONVERT']
       isextract = asm.find('PEXTR') != -1 or asm.find("EXTRACT") != -1
+      isbmi = instrNode.attrib['extension'] in ['BMI1','BMI2']
+      islzcnt = instrNode.attrib['extension'] in ['LZCNT']
       ismmx = instrNode.attrib['category'] in ['MMX'] or instrNode.attrib['extension'] in ['MMX']
       issse = instrNode.attrib['extension'] in ['SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4', 'SSE4a']
       issse4a = instrNode.attrib['extension'] in ['SSE4a']
@@ -118,6 +120,7 @@ def print_cpu_uops_yaml(cpu):
       asm = asm.removeprefix("{store}").lstrip()
 
       fail = False
+      opwidth = None
       srcwidth = None
       dstwidth = None
       for operandNode in instrNode.iter('operand'):
@@ -130,6 +133,8 @@ def print_cpu_uops_yaml(cpu):
         isreg = operandNode.attrib['type'] == 'reg'
         ismem = operandNode.attrib['type'] == 'mem'
         isimm = operandNode.attrib['type'] == 'imm'
+        isflags = operandNode.attrib['type'] == 'flags'
+        opwidth = operandNode.attrib.get('width', None)
 
         if isreg:
           registers = operandNode.text.split(',')
@@ -143,7 +148,6 @@ def print_cpu_uops_yaml(cpu):
           args += 'i_0x1 '
 
         if ismov and not ismaskmov:
-          opwidth = operandNode.attrib.get('width', None)
           if opwidth is not None:
             if operandIdx == 1:
               dstwidth = int(opwidth)
@@ -166,7 +170,11 @@ def print_cpu_uops_yaml(cpu):
                 size = 'Z'
 
         if first:
-          if asm.find("POPCNT") != -1:
+          if isbmi or islzcnt:
+            dstwidth = size = operandNode.attrib.get('width', '')
+            if not ismem:
+              continue
+          elif asm.find("POPCNT") != -1:
             size = operandNode.attrib.get('width', '')
           elif operandNode.attrib.get('r', '0') == '0':
             if operandNode.attrib.get('w', '1') == '1':
@@ -199,6 +207,12 @@ def print_cpu_uops_yaml(cpu):
       if isprefetch or asm.find("MXCSR") != -1:
         size = ''
         sig = ''
+
+      if isbmi or islzcnt:
+        if asm.startswith('BEXTR') or asm.startswith('BZHI') or asm.startswith('SARX') or asm.startswith('SHLX') or asm.startswith('SHRX'):
+          sig = 'rm' if sig == 'mr' else sig
+        elif asm.startswith('BLS') or asm.startswith('TZCNT') or islzcnt:
+          sig = 'r' + sig
 
       if ismmx or (isconvert and (asm.find("PI2") != -1 or asm.find("2PI") != -1)):
          asm = "MMX_" + asm
