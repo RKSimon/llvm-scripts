@@ -89,7 +89,7 @@ def print_cpu_uops_yaml(cpu):
       args = ''
 
       # Ignore uops.info custom instruction variants
-      if asm.find("PCMPESTRIQ") != -1 or asm.find("PCMPISTRIQ") != -1 or asm.find("PCMPESTRMQ") != -1 or asm.find("PCMPISTRMQ") != -1:
+      if asm.find('PCMPESTRIQ') != -1 or asm.find('PCMPISTRIQ') != -1 or asm.find('PCMPESTRMQ') != -1 or asm.find('PCMPISTRMQ') != -1:
         continue
 
       # TODO: Broken instructions (don't follow the standard naming convention)
@@ -100,12 +100,12 @@ def print_cpu_uops_yaml(cpu):
       if not any(x.attrib['name'] == cpuname for x in archs):
         continue
 
-      ismov = asm.find("MOV") != -1
-      ismaskmov = asm.find("MASKMOV") != -1
-      iscrc32 = asm.find("CRC32") != -1
+      ismov = asm.find('MOV') != -1
+      ismaskmov = asm.find('MASKMOV') != -1
+      iscrc32 = asm.find('CRC32') != -1
       isprefetch = instrNode.attrib['category'] in ['PREFETCH']
       isconvert = instrNode.attrib['category'] in ['CONVERT']
-      isextract = asm.find('PEXTR') != -1 or asm.find("EXTRACT") != -1
+      isextract = asm.find('PEXTR') != -1 or asm.find('EXTRACT') != -1
       isbase = instrNode.attrib['extension'] in ['BASE']
       isadx = instrNode.attrib['extension'] in ['ADOX_ADCX']
       isbmi = instrNode.attrib['extension'] in ['BMI1','BMI2']
@@ -119,11 +119,11 @@ def print_cpu_uops_yaml(cpu):
       iszeroing = instrNode.attrib.get('zeroing', '0') == '1'
       isshiftrotate = isbase and instrNode.attrib['category'] in ['ROTATE','SHIFT']
 
-      isload = asm.startswith("{load}")
-      asm = asm.removeprefix("{load}").lstrip()
+      isload = asm.startswith('{load}')
+      asm = asm.removeprefix('{load}').lstrip()
 
-      isstore = asm.startswith("{store}")
-      asm = asm.removeprefix("{store}").lstrip()
+      isstore = asm.startswith('{store}')
+      asm = asm.removeprefix('{store}').lstrip()
 
       fail = False
       opwidth = None
@@ -191,7 +191,7 @@ def print_cpu_uops_yaml(cpu):
             dstwidth = size = operandNode.attrib.get('width', '')
             if not ismem:
               continue
-          elif asm.find("POPCNT") != -1:
+          elif asm.find('POPCNT') != -1:
             size = operandNode.attrib.get('width', '')
           elif operandNode.attrib.get('r', '0') == '0':
             if operandNode.attrib.get('w', '1') == '1':
@@ -201,7 +201,7 @@ def print_cpu_uops_yaml(cpu):
                 size = 'Z'
             if not isbase and not isextract and not isconvert:
               continue
-            if isconvert and (asm.find("2SD") != -1 or asm.find("2SS") != -1):
+            if isconvert and (asm.find('2SD') != -1 or asm.find('2SS') != -1):
               continue
 
         if isreg:
@@ -239,7 +239,7 @@ def print_cpu_uops_yaml(cpu):
         elif sig.startswith('m') and asm in ['XADD','XCHG']:
           continue # TODO
 
-      if isprefetch or asm.find("MXCSR") != -1:
+      if isprefetch or asm.find('MXCSR') != -1:
         size = ''
         sig = ''
 
@@ -249,13 +249,13 @@ def print_cpu_uops_yaml(cpu):
         elif asm.startswith('BLS') or asm.startswith('TZCNT') or islzcnt:
           sig = 'r' + sig
 
-      if ismmx or (isconvert and (asm.find("PI2") != -1 or asm.find("2PI") != -1)):
-         asm = "MMX_" + asm
+      if ismmx or (isconvert and (asm.find('PI2') != -1 or asm.find('2PI') != -1)):
+         asm = 'MMX_' + asm
 
       if ismov:
-        if asm.find("PMOVSX") != -1 or asm.find("PMOVZX") != -1 or asm.find("DUP") != -1 or asm.find("MOVMSK") != -1:
+        if asm.find('PMOVSX') != -1 or asm.find('PMOVZX') != -1 or asm.find('DUP') != -1 or asm.find('MOVMSK') != -1:
           sig = 'r' + sig
-        elif asm.find("MASKMOVDQU") != -1 or asm.find("MMX_MASKMOVQ") != -1:
+        elif asm.find('MASKMOVDQU') != -1 or asm.find('MMX_MASKMOVQ') != -1:
           size = '64'
           sig = ''
         elif ismaskmov:
@@ -313,22 +313,22 @@ def print_cpu_uops_yaml(cpu):
         if iform_strip in movdict:
           asm = iform_prefix + movdict[iform_strip]
 
-      if asm.find("LDDQU") != -1:
+      if asm.find('LDDQU') != -1:
         sig = 'r' + sig
 
-      if asm.find("ABS") != -1 or asm.find("HMINPOS") != -1:
+      if asm.find('ABS') != -1 or asm.find('HMINPOS') != -1:
         sig = 'r' + sig
 
-      if asm.find("RCPS") != -1 or asm.find("SQRTS") != -1:
+      if asm.find('RCPS') != -1 or asm.find('SQRTS') != -1:
         sig = 'm' if sig.find('m') != -1 else 'r'
 
-      if asm.find("ROUNDS") != -1:
+      if asm.find('ROUNDS') != -1:
         sig = 'mi' if sig.find('m') != -1 else 'ri'
 
       if isf16c:
         sig = sig.removesuffix('i')
 
-      if asm.find("BROADCAST") != -1:
+      if asm.find('BROADCAST') != -1:
         sig = 'r' + sig
 
       if asm.find('F128') != -1 or asm.find('I128') != -1:
@@ -342,7 +342,7 @@ def print_cpu_uops_yaml(cpu):
         sig = 'm' if sig.find('m') != -1 else 'r'
 
       # SSE BLENDV xmm0 hack
-      if asm.startswith("BLENDV") or asm.startswith("PBLENDV"):
+      if asm.startswith('BLENDV') or asm.startswith('PBLENDV'):
          sig += '0'
 
       portlist = None
