@@ -142,14 +142,18 @@ def print_cpu_uops_yaml(cpu):
         opwidth = operandNode.attrib.get('width', None)
         xtype = operandNode.attrib.get('xtype')
 
+        r_sig = 'r'
         if isreg:
           registers = operandNode.text.split(',')
           register = registers[min(operandIdx, len(registers)-1)]
           args += register + ' '
           if first and (ismmx or issse or isbase):
             args += register + ' '
+          if operandNode.attrib.get('implicit', '0') == '1' and register == 'CL':
+            r_sig = register
           # TODO: Handle seg registers
           if 'GS' in registers:
+            r_sig = 's'
             fail = True
         elif ismem:
           args += 'RDI i_0x1 %noreg '
@@ -200,7 +204,7 @@ def print_cpu_uops_yaml(cpu):
               continue
 
         if isreg:
-          sig += 'r'
+          sig += r_sig
         elif isimm:
           sig += 'i'
           if isbase and (opwidth == '8' or int(dstwidth) > int(opwidth)):
@@ -231,8 +235,6 @@ def print_cpu_uops_yaml(cpu):
       if isbase:
         if asm.startswith(tuple(['MOVSX','MOVZX'])):
           sig += opwidth
-        elif isshiftrotate and sig.endswith('r'):
-          sig = sig.removesuffix('r') + 'CL' # TODO
         elif sig.startswith('m') and asm in ['XADD','XCHG']:
           continue # TODO
 
