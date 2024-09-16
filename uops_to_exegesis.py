@@ -76,7 +76,7 @@ def print_cpu_uops_yaml(cpu):
    [cpuname, cpumodel, portmap] = get_cpu_details(cpu)
 
    for instrNode in root.iter('instruction'):
-      if instrNode.attrib['extension'] not in ['BASE', 'ADOX_ADCX', 'BMI1', 'BMI2', 'LZCNT', 'MMX', 'SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4a', 'SSE4', 'AVX', 'AVX2', 'PCLMULQDQ', 'VPCLMULQDQ', 'F16C', 'FMA']:
+      if instrNode.attrib['extension'] not in ['BASE', 'ADOX_ADCX', 'BMI1', 'BMI2', 'LZCNT', 'MMX', 'SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4a', 'SSE4', 'AVX', 'AVX2', 'AVX512VEX', 'PCLMULQDQ', 'VPCLMULQDQ', 'F16C', 'FMA']:
          continue
       if any(x in instrNode.attrib['isa-set'] for x in ['FP16']):
          continue
@@ -116,6 +116,7 @@ def print_cpu_uops_yaml(cpu):
       isf16c = instrNode.attrib['extension'] in ['F16C']
       isfma = instrNode.attrib['extension'] in ['FMA']
       isopmask = instrNode.attrib.get('mask', '0') == '1'
+      iskmask = instrNode.attrib['category'] in ['KMASK']
       iszeroing = instrNode.attrib.get('zeroing', '0') == '1'
       isshiftrotate = isbase and instrNode.attrib['category'] in ['ROTATE','SHIFT']
 
@@ -152,6 +153,8 @@ def print_cpu_uops_yaml(cpu):
             args += register + ' '
           if operandNode.attrib.get('implicit', '0') == '1' and register == 'CL':
             r_sig = register
+          if asm.find('KMOV') != -1 and xtype == 'i1':
+            r_sig = 'k' # TODO
           # TODO: Handle seg registers
           if 'GS' in registers:
             r_sig = 's'
@@ -199,7 +202,7 @@ def print_cpu_uops_yaml(cpu):
                 size = 'Y'
               elif operandNode.attrib.get('width', '128') == '512':
                 size = 'Z'
-            if not isbase and not isextract and not isconvert:
+            if not isbase and not isextract and not isconvert and not asm.startswith('KMOV'):
               continue
             if isconvert and (asm.find('2SD') != -1 or asm.find('2SS') != -1):
               continue
@@ -252,7 +255,7 @@ def print_cpu_uops_yaml(cpu):
       if ismmx or (isconvert and (asm.find('PI2') != -1 or asm.find('2PI') != -1)):
          asm = 'MMX_' + asm
 
-      if ismov:
+      if ismov and not iskmask:
         if asm.find('PMOVSX') != -1 or asm.find('PMOVZX') != -1 or asm.find('DUP') != -1 or asm.find('MOVMSK') != -1:
           sig = 'r' + sig
         elif asm.find('MASKMOVDQU') != -1 or asm.find('MMX_MASKMOVQ') != -1:
@@ -312,6 +315,9 @@ def print_cpu_uops_yaml(cpu):
         iform_strip = iform.removeprefix('V')
         if iform_strip in movdict:
           asm = iform_prefix + movdict[iform_strip]
+
+      if asm.find('KNOT') != -1:
+        sig = 'r' + sig
 
       if asm.find('LDDQU') != -1:
         sig = 'r' + sig
