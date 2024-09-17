@@ -153,7 +153,7 @@ def print_cpu_uops_yaml(cpu):
             args += register + ' '
           if operandNode.attrib.get('implicit', '0') == '1' and register == 'CL':
             r_sig = register
-          if asm.find('KMOV') != -1 and xtype == 'i1':
+          if xtype == 'i1':
             r_sig = 'k' # TODO
           # TODO: Handle seg registers
           if 'GS' in registers:
@@ -317,7 +317,7 @@ def print_cpu_uops_yaml(cpu):
           asm = iform_prefix + movdict[iform_strip]
 
       if asm.find('KNOT') != -1:
-        sig = 'r' + sig
+        sig = 'k' + sig
 
       if asm.find('LDDQU') != -1:
         sig = 'r' + sig
