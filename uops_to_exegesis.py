@@ -96,7 +96,7 @@ def print_cpu_uops_yaml(cpu):
       if asm.startswith(tuple(['LOCK','CMOV','ENTER','CMPXCHG','INVLPG','POP','PUSH','RET','SET','SLDT','STR','VER'])):
         continue
       if instrNode.attrib['extension'] in ['AVX512EVEX']:
-        if any(x in asm for x in ['GATHER','SCATTER','VCMP','VCOMPRESS','VCVT','VEXPAND','VEXTRACT','VFIXUPIMM','VFPCLASS','VGETEXP','VGETMANT','VINSERT','VPCMP','VPCOMPRESS','VPCONFLICT','VPEXPAND','VPMOVB2','VPMOV','VPTEST','VRANGE','VRCP','VREDUCE','VRND','VRSQRT','VSCALE','VP2INTERSECT','VPDP','VPMADD','VPSHL','VPSHR','VPSHUFBIT','BF16']):
+        if any(x in asm for x in ['GATHER','SCATTER','VCMP','VCOMPRESS','VEXPAND','VEXTRACT','VFIXUPIMM','VFPCLASS','VGETEXP','VGETMANT','VINSERT','VPCMP','VPCOMPRESS','VPCONFLICT','VPEXPAND','VPMOVB2','VPMOV','VPTEST','VRANGE','VRCP','VREDUCE','VRND','VRSQRT','VSCALE','VP2INTERSECT','VPDP','VPMADD','VPSHL','VPSHR','VPSHUFBIT','BF16']):
           continue
       archs = instrNode.iter('architecture')
       if not any(x.attrib['name'] == cpuname for x in archs):
@@ -195,11 +195,11 @@ def print_cpu_uops_yaml(cpu):
           xtype = xtype.removeprefix('i').removeprefix('u').removeprefix('f')
           if operandIdx == 1:
             dstwidth = int(xtype)
-          if operandIdx == 2:
+          if operandIdx == (3 if ismask else 2):
             srcwidth = int(xtype)
             if srcwidth > dstwidth:
               if opwidth is not None:
-                if opwidth == '512':
+                if isavx512scalar or opwidth == '512':
                   size = 'Z'
                 elif opwidth == '256':
                   size = 'Z256' if isevex else 'Y'
@@ -359,8 +359,9 @@ def print_cpu_uops_yaml(cpu):
       if isevex and ismask:
         sig += 'kz' if iszeroing else 'k'
 
-      if isf16c:
-        sig = sig.removesuffix('i')
+      # TODO: Fix LLVM instruction
+      if isf16c or asm.find('PS2PH') != -1:
+        sig = sig.replace('i', '')
 
       if asm.find('BROADCAST') != -1:
         sig = 'r' + sig
