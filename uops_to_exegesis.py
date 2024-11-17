@@ -96,7 +96,7 @@ def print_cpu_uops_yaml(cpu):
       if asm.startswith(tuple(['LOCK','CMOV','ENTER','CMPXCHG','INVLPG','POP','PUSH','RET','SET','SLDT','STR','VER'])):
         continue
       if instrNode.attrib['extension'] in ['AVX512EVEX']:
-        if any(x in asm for x in ['GATHER','SCATTER','VCMP','VCOMPRESS','VCVT','VEXPAND','VEXTRACT','VFIXUPIMM','VFPCLASS','VGETEXP','VGETMANT','VINSERT','VPCMP','VPCOMPRESS','VPCONFLICT','VPEXPAND','VPLZCNT','VPMOVB2','VPMOV','VPTEST','VRANGE','VRCP','VREDUCE','VRND','VRSQRT','VSCALE','VP2INTERSECT','VPDP','VPMADD','VPOPCNT','VPSHL','VPSHR','VPSHUFBIT']):
+        if any(x in asm for x in ['GATHER','SCATTER','VCMP','VCOMPRESS','VCVT','VEXPAND','VEXTRACT','VFIXUPIMM','VFPCLASS','VGETEXP','VGETMANT','VINSERT','VPCMP','VPCOMPRESS','VPCONFLICT','VPEXPAND','VPMOVB2','VPMOV','VPTEST','VRANGE','VRCP','VREDUCE','VRND','VRSQRT','VSCALE','VP2INTERSECT','VPDP','VPMADD','VPSHL','VPSHR','VPSHUFBIT','BF16']):
           continue
       archs = instrNode.iter('architecture')
       if not any(x.attrib['name'] == cpuname for x in archs):
@@ -211,7 +211,7 @@ def print_cpu_uops_yaml(cpu):
             dstwidth = size = operandNode.attrib.get('width', '')
             if not ismem:
               continue
-          elif asm.find('POPCNT') != -1:
+          elif asm.startswith('POPCNT'):
             size = operandNode.attrib.get('width', '')
           elif operandNode.attrib.get('r', '0') == '0' or isevex:
             if operandNode.attrib.get('w', '1') == '1':
@@ -222,10 +222,11 @@ def print_cpu_uops_yaml(cpu):
                   size = 'Z256' if isevex else 'Y'
                 elif isevex and opwidth == '128':
                   size = 'Z128'
-            if not isbase and not isextract and not isconvert and not asm.startswith('KMOV'):
-              continue
-            if isconvert and (asm.find('2SD') != -1 or asm.find('2SS') != -1):
-              continue
+            if not isevex or not (asm.startswith('VPLZCNT') or asm.startswith('VPOPCNT')):
+              if not isbase and not isextract and not isconvert and not asm.startswith('KMOV'):
+                continue
+              if isconvert and (asm.find('2SD') != -1 or asm.find('2SS') != -1):
+                continue
 
         if isreg:
           if not isopmask:
