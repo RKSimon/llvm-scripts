@@ -130,9 +130,11 @@ def print_cpu_uops_yaml(cpu):
       opwidth = None
       srcwidth = None
       dstwidth = None
+      operandCount = len(list(instrNode.iter('operand')))
       for operandNode in instrNode.iter('operand'):
         operandIdx = int(operandNode.attrib['idx'])
         first = operandIdx == 1
+        last = operandIdx == operandCount
 
         if operandNode.attrib.get('suppressed', '0') == '1':
           continue
@@ -170,10 +172,10 @@ def print_cpu_uops_yaml(cpu):
 
         if ismov and not ismaskmov:
           if opwidth is not None:
-            if operandIdx == 1:
+            if first:
               dstwidth = int(opwidth)
               isstore = ismem
-            if operandIdx == 2:
+            if last:
               srcwidth = int(opwidth)
               isload = ismem
 
