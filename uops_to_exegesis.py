@@ -181,7 +181,7 @@ def print_cpu_uops_yaml(cpu):
               isload = ismem
 
         if isconvert and xtype is not None:
-          xtype = xtype.removeprefix('i').removeprefix('f')
+          xtype = xtype.removeprefix('i').removeprefix('u').removeprefix('f')
           if operandIdx == 1:
             dstwidth = int(xtype)
           if operandIdx == 2:
