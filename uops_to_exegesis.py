@@ -198,12 +198,13 @@ def print_cpu_uops_yaml(cpu):
           if operandIdx == 2:
             srcwidth = int(xtype)
             if srcwidth > dstwidth:
-              if operandNode.attrib.get('width', '128') == '512':
-                size = 'Z'
-              elif operandNode.attrib.get('width', '128') == '256':
-                size = 'Z256' if isevex else 'Y'
-              elif isevex and operandNode.attrib.get('width', '128') == '128':
-                size = 'Z128'
+              if opwidth is not None:
+                if opwidth == '512':
+                  size = 'Z'
+                elif opwidth == '256':
+                  size = 'Z256' if isevex else 'Y'
+                elif isevex and opwidth == '128':
+                  size = 'Z128'
 
         if first:
           if isbmi or islzcnt:
@@ -214,12 +215,13 @@ def print_cpu_uops_yaml(cpu):
             size = operandNode.attrib.get('width', '')
           elif operandNode.attrib.get('r', '0') == '0' or isevex:
             if operandNode.attrib.get('w', '1') == '1':
-              if isavx512scalar or operandNode.attrib.get('width', '0') == '512':
-                size = 'Z'
-              elif operandNode.attrib.get('width', '0') == '256':
-                size = 'Z256' if isevex else 'Y'
-              elif isevex and operandNode.attrib.get('width', '0') == '128':
-                size = 'Z128'
+              if opwidth is not None:
+                if isavx512scalar or opwidth == '512':
+                  size = 'Z'
+                elif opwidth == '256':
+                  size = 'Z256' if isevex else 'Y'
+                elif isevex and opwidth == '128':
+                  size = 'Z128'
             if not isbase and not isextract and not isconvert and not asm.startswith('KMOV'):
               continue
             if isconvert and (asm.find('2SD') != -1 or asm.find('2SS') != -1):
