@@ -115,8 +115,9 @@ def print_cpu_uops_yaml(cpu):
       issse4a = instrNode.attrib['extension'] in ['SSE4a']
       isf16c = instrNode.attrib['extension'] in ['F16C']
       isfma = instrNode.attrib['extension'] in ['FMA']
-      isopmask = instrNode.attrib.get('mask', '0') == '1'
+      isevex = instrNode.attrib.get('evex', '0') == '1'
       iskmask = instrNode.attrib['category'] in ['KMASK']
+      ismask = instrNode.attrib.get('mask', '0') == '1'
       iszeroing = instrNode.attrib.get('zeroing', '0') == '1'
       isshiftrotate = isbase and instrNode.attrib['category'] in ['ROTATE','SHIFT']
 
