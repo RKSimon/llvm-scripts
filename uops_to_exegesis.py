@@ -76,7 +76,7 @@ def print_cpu_uops_yaml(cpu):
    [cpuname, cpumodel, portmap] = get_cpu_details(cpu)
 
    for instrNode in root.iter('instruction'):
-      if instrNode.attrib['extension'] not in ['BASE', 'ADOX_ADCX', 'BMI1', 'BMI2', 'LZCNT', 'MMX', 'SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4a', 'SSE4', 'AVX', 'AVX2', 'AVX512VEX', 'PCLMULQDQ', 'VPCLMULQDQ', 'F16C', 'FMA']:
+      if instrNode.attrib['extension'] not in ['BASE', 'ADOX_ADCX', 'BMI1', 'BMI2', 'LZCNT', 'MMX', 'SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4a', 'SSE4', 'AVX', 'AVX2', 'AVX512VEX', 'AVX512EVEX', 'PCLMULQDQ', 'VPCLMULQDQ', 'F16C', 'FMA']:
          continue
       if any(x in instrNode.attrib['isa-set'] for x in ['FP16']):
          continue
@@ -95,7 +95,9 @@ def print_cpu_uops_yaml(cpu):
       # TODO: Broken instructions (don't follow the standard naming convention)
       if asm.startswith(tuple(['LOCK','CMOV','ENTER','CMPXCHG','INVLPG','POP','PUSH','RET','SET','SLDT','STR','VER'])):
         continue
-
+      if instrNode.attrib['extension'] in ['AVX512EVEX']:
+        if any(x in asm for x in ['GATHER','SCATTER','VCMP','VCOMPRESS','VCVT','VEXPAND','VEXTRACT','VFIXUPIMM','VFPCLASS','VGETEXP','VGETMANT','VINSERT','VPCMP','VPCOMPRESS','VPCONFLICT','VPEXPAND','VPLZCNT','VPMOVB2','VPMOV','VPTEST','VRANGE','VRCP','VREDUCE','VRND','VRSQRT','VSCALE','VP2INTERSECT','VPDP','VPMADD','VPOPCNT','VPSHL','VPSHR','VPSHUFBIT']):
+          continue
       archs = instrNode.iter('architecture')
       if not any(x.attrib['name'] == cpuname for x in archs):
         continue
@@ -119,6 +121,7 @@ def print_cpu_uops_yaml(cpu):
       iskmask = instrNode.attrib['category'] in ['KMASK']
       ismask = instrNode.attrib.get('mask', '0') == '1'
       iszeroing = instrNode.attrib.get('zeroing', '0') == '1'
+      isavx512scalar = instrNode.attrib.get('isa-set', '') == 'AVX512F_SCALAR'
       isshiftrotate = isbase and instrNode.attrib['category'] in ['ROTATE','SHIFT']
 
       isload = asm.startswith('{load}')
@@ -126,6 +129,12 @@ def print_cpu_uops_yaml(cpu):
 
       isstore = asm.startswith('{store}')
       asm = asm.removeprefix('{store}').lstrip()
+
+      # TODO: handle evex variants
+      isevex_variant = asm.startswith('{evex}')
+      asm = asm.removeprefix('{evex}').lstrip()
+      if isevex_variant:
+        continue
 
       fail = False
       opwidth = None
@@ -144,7 +153,9 @@ def print_cpu_uops_yaml(cpu):
         ismem = operandNode.attrib['type'] == 'mem'
         isimm = operandNode.attrib['type'] == 'imm'
         isflags = operandNode.attrib['type'] == 'flags'
+        isopmask = operandNode.attrib.get('opmask', '0') == '1'
         opwidth = operandNode.attrib.get('width', None)
+        mem_suffix = operandNode.attrib.get('memory-suffix', None)
         xtype = operandNode.attrib.get('xtype')
 
         r_sig = 'r'
@@ -201,9 +212,9 @@ def print_cpu_uops_yaml(cpu):
               continue
           elif asm.find('POPCNT') != -1:
             size = operandNode.attrib.get('width', '')
-          elif operandNode.attrib.get('r', '0') == '0':
+          elif operandNode.attrib.get('r', '0') == '0' or isevex:
             if operandNode.attrib.get('w', '1') == '1':
-              if operandNode.attrib.get('width', '0') == '512':
+              if isavx512scalar or operandNode.attrib.get('width', '0') == '512':
                 size = 'Z'
               elif operandNode.attrib.get('width', '0') == '256':
                 size = 'Z256' if isevex else 'Y'
@@ -215,7 +226,8 @@ def print_cpu_uops_yaml(cpu):
               continue
 
         if isreg:
-          sig += r_sig
+          if not isopmask:
+            sig += r_sig
         elif isimm:
           sig += 'i'
           if isbase and (opwidth == '8' or int(dstwidth) > int(opwidth)):
@@ -226,7 +238,7 @@ def print_cpu_uops_yaml(cpu):
             elif not (isshiftrotate or asm in ['IN','OUT','MOV']):
               sig += opwidth
         elif ismem:
-          sig += 'm'
+          sig += 'mb' if mem_suffix is not None else 'm'
         elif isflags:
           continue
         else:
@@ -338,6 +350,12 @@ def print_cpu_uops_yaml(cpu):
       if asm.find('ROUNDS') != -1:
         sig = 'mi' if sig.find('m') != -1 else 'ri'
 
+      if isevex and isavx512scalar and not ismov:
+        sig += '_Int'
+
+      if isevex and ismask:
+        sig += 'kz' if iszeroing else 'k'
+
       if isf16c:
         sig = sig.removesuffix('i')
 
@@ -351,7 +369,7 @@ def print_cpu_uops_yaml(cpu):
         asm += 'I' if sig.find('i') != -1  else ''
         sig = ''
 
-      if isfma:
+      if isfma or asm.find('VFMADD') != -1 or asm.find('VFNMADD') != -1 or asm.find('VFMSUB') != -1 or asm.find('VFNMSUB') != -1:
         sig = 'm' if sig.find('m') != -1 else 'r'
 
       # SSE BLENDV xmm0 hack
