@@ -96,7 +96,7 @@ def print_cpu_uops_yaml(cpu):
       if asm.startswith(tuple(['LOCK','CMOV','ENTER','CMPXCHG','INVLPG','POP','PUSH','RET','SET','SLDT','STR','VER'])):
         continue
       if instrNode.attrib['extension'] in ['AVX512EVEX']:
-        if any(x in asm for x in ['GATHER','SCATTER','VCMP','VEXTRACT','VFIXUPIMM','VFPCLASS','VGETEXP','VGETMANT','VINSERT','VPCMP','VPMOVB2','VPMOV','VPTEST','VRANGE','VREDUCE','VRND','VSCALE','VP2INTERSECT','VPDP','VPMADD','VPSHL','VPSHR','VPSHUFBIT','BF16']):
+        if any(x in asm for x in ['GATHER','SCATTER','VCMP','VEXTRACT','VFIXUPIMM','VFPCLASS','VGETEXP','VGETMANT','VINSERT','VPCMP','VPMOVB2','VPMOV','VPTEST','VRANGE','VREDUCE','VRND','VSCALE','VP2INTERSECT','VPDP','VPMADD','VPSHUFBIT','BF16']):
           continue
       archs = instrNode.iter('architecture')
       if not any(x.attrib['name'] == cpuname for x in archs):
@@ -366,7 +366,11 @@ def print_cpu_uops_yaml(cpu):
       if asm.find('F128') != -1 or asm.find('I128') != -1:
         size = ''
 
+      # 3 arg signature cleanups
       if isfma or asm.find('VFMADD') != -1 or asm.find('VFNMADD') != -1 or asm.find('VFMSUB') != -1 or asm.find('VFNMSUB') != -1:
+        sig = 'm' if sig.find('m') != -1 else 'r'
+
+      if asm.find('VPSHLDV') != -1 or asm.find('VPSHRDV') != -1:
         sig = 'm' if sig.find('m') != -1 else 'r'
 
       # Signature postfixes
