@@ -96,7 +96,7 @@ def print_cpu_uops_yaml(cpu):
       if asm.startswith(tuple(['LOCK','CMOV','ENTER','CMPXCHG','INVLPG','POP','PUSH','RET','SET','SLDT','STR','VER'])):
         continue
       if instrNode.attrib['extension'] in ['AVX512EVEX']:
-        if any(x in asm for x in ['GATHER','SCATTER','VCMP','VEXTRACT','VFIXUPIMM','VFPCLASS','VGETEXP','VGETMANT','VINSERT','VPCMP','VPMOVB2','VPMOV','VPTEST','VRANGE','VREDUCE','VRND','VSCALE','VP2INTERSECT','VPDP','VPSHUFBIT','BF16']):
+        if any(x in asm for x in ['GATHER','SCATTER','VCMP','VEXTRACT','VFIXUPIMM','VFPCLASS','VGETEXP','VGETMANT','VINSERT','VPCMP','VPMOVB2','VPMOV','VRANGE','VREDUCE','VRND','VSCALE','VP2INTERSECT','VPDP','VPSHUFBIT','BF16']):
           continue
       archs = instrNode.iter('architecture')
       if not any(x.attrib['name'] == cpuname for x in archs):
@@ -208,6 +208,14 @@ def print_cpu_uops_yaml(cpu):
                   size = 'Z256' if isevex else 'Y'
                 elif isevex and opwidth == '128':
                   size = 'Z128'
+
+        if isevex and opwidth is not None and size == '' and asm.startswith('VPTEST'):
+          if opwidth == '512':
+            size = 'Z'
+          elif opwidth == '256':
+            size = 'Z256'
+          elif opwidth == '128':
+            size = 'Z128'
 
         if first:
           if isbmi or islzcnt:
