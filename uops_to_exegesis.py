@@ -96,7 +96,7 @@ def print_cpu_uops_yaml(cpu):
       if asm.startswith(tuple(['LOCK','CMOV','ENTER','CMPXCHG','INVLPG','POP','PUSH','RET','SET','SLDT','STR','VER'])):
         continue
       if instrNode.attrib['extension'] in ['AVX512EVEX']:
-        if any(x in asm for x in ['GATHER','SCATTER','VCMP','VCOMPRESS','VEXPAND','VEXTRACT','VFIXUPIMM','VFPCLASS','VGETEXP','VGETMANT','VINSERT','VPCMP','VPCOMPRESS','VPCONFLICT','VPEXPAND','VPMOVB2','VPMOV','VPTEST','VRANGE','VRCP','VREDUCE','VRND','VRSQRT','VSCALE','VP2INTERSECT','VPDP','VPMADD','VPSHL','VPSHR','VPSHUFBIT','BF16']):
+        if any(x in asm for x in ['GATHER','SCATTER','VCMP','VEXTRACT','VFIXUPIMM','VFPCLASS','VGETEXP','VGETMANT','VINSERT','VPCMP','VPMOVB2','VPMOV','VPTEST','VRANGE','VRCP','VREDUCE','VRND','VRSQRT','VSCALE','VP2INTERSECT','VPDP','VPMADD','VPSHL','VPSHR','VPSHUFBIT','BF16']):
           continue
       archs = instrNode.iter('architecture')
       if not any(x.attrib['name'] == cpuname for x in archs):
@@ -108,6 +108,9 @@ def print_cpu_uops_yaml(cpu):
       isprefetch = instrNode.attrib['category'] in ['PREFETCH']
       isconvert = instrNode.attrib['category'] in ['CONVERT']
       isextract = asm.find('PEXTR') != -1 or asm.find('EXTRACT') != -1
+      isconflict = instrNode.attrib['category'] in ['CONFLICT']
+      iscompress = instrNode.attrib['category'] in ['COMPRESS']
+      isexpand = instrNode.attrib['category'] in ['EXPAND']
       isbase = instrNode.attrib['extension'] in ['BASE']
       isadx = instrNode.attrib['extension'] in ['ADOX_ADCX']
       isbmi = instrNode.attrib['extension'] in ['BMI1','BMI2']
@@ -222,7 +225,8 @@ def print_cpu_uops_yaml(cpu):
                   size = 'Z256' if isevex else 'Y'
                 elif isevex and opwidth == '128':
                   size = 'Z128'
-            if not isevex or not (asm.startswith('VPLZCNT') or asm.startswith('VPOPCNT')):
+            # TODO: either cleanup this logic or simplify some LLVM instruction names to avoid this
+            if not isevex or not (isconflict or iscompress or isexpand or asm.startswith('VPLZCNT') or asm.startswith('VPOPCNT')):
               if not isbase and not isextract and not isconvert and not asm.startswith('KMOV'):
                 continue
               if isconvert and (asm.find('2SD') != -1 or asm.find('2SS') != -1):
