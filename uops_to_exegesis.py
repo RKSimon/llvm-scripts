@@ -357,14 +357,6 @@ def print_cpu_uops_yaml(cpu):
       if asm.find('ROUNDS') != -1:
         sig = 'mi' if sig.find('m') != -1 else 'ri'
 
-      if isevex and isavx512scalar and not ismov:
-        if asm.find('VRCP14') == -1 and asm.find('VRSQRT14') == -1:
-          sig += '_Int'
-
-      if isevex and ismask:
-        sig += 'kz' if iszeroing else 'k'
-
-      # TODO: Fix LLVM instruction
       if isf16c or asm.find('PS2PH') != -1:
         sig = sig.replace('i', '')
 
@@ -374,16 +366,24 @@ def print_cpu_uops_yaml(cpu):
       if asm.find('F128') != -1 or asm.find('I128') != -1:
         size = ''
 
+      if isfma or asm.find('VFMADD') != -1 or asm.find('VFNMADD') != -1 or asm.find('VFMSUB') != -1 or asm.find('VFNMSUB') != -1:
+        sig = 'm' if sig.find('m') != -1 else 'r'
+
+      # Signature postfixes
       if issse4a:
         asm += 'I' if sig.find('i') != -1  else ''
         sig = ''
 
-      if isfma or asm.find('VFMADD') != -1 or asm.find('VFNMADD') != -1 or asm.find('VFMSUB') != -1 or asm.find('VFNMSUB') != -1:
-        sig = 'm' if sig.find('m') != -1 else 'r'
-
       # SSE BLENDV xmm0 hack
       if asm.startswith('BLENDV') or asm.startswith('PBLENDV'):
          sig += '0'
+
+      if isevex and isavx512scalar and not ismov:
+        if asm.find('VRCP14') == -1 and asm.find('VRSQRT14') == -1:
+          sig += '_Int'
+
+      if isevex and ismask:
+        sig += 'kz' if iszeroing else 'k'
 
       portlist = None
       uops = None
