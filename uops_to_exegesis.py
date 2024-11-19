@@ -97,7 +97,7 @@ def print_cpu_uops_yaml(cpu):
       if asm.startswith(tuple(['LOCK','CMOV','ENTER','CMPXCHG','INVLPG','POP','PUSH','RET','SET','SLDT','STR','VER'])):
         continue
       if instrNode.attrib['extension'] in ['AVX512EVEX']:
-        if any(x in asm for x in ['GATHER','SCATTER','VEXTRACT','VGETEXP','VGETMANT','VINSERT','VREDUCE','VRND','VP2INTERSECT','VPDP','VPSHUFBIT','BF16']):
+        if any(x in asm for x in ['GATHER','SCATTER','VEXTRACT','VGETEXP','VGETMANT','VINSERT','VREDUCE','VRND','VPDP','VPSHUFBIT','BF16']):
           continue
       archs = instrNode.iter('architecture')
       if not any(x.attrib['name'] == cpuname for x in archs):
@@ -218,7 +218,7 @@ def print_cpu_uops_yaml(cpu):
                   size = 'Z128'
 
         if isevex and opwidth is not None and size == '':
-          if asm.startswith('VCMP') or asm.startswith('VPCMP') or asm.startswith('VFPCLASS') or asm.startswith('VPTEST') or asm.startswith('VPMOVM2') or asm.endswith('2M'):
+          if asm.startswith('VCMP') or asm.startswith('VPCMP') or asm.startswith('VFPCLASS') or asm.startswith('VPTEST') or asm.startswith('VP2INTERSECT') or asm.startswith('VPMOVM2') or asm.endswith('2M'):
             opsize = int(opwidth) * broadcast_factor
             if isavx512scalar or opsize == 512:
               size = 'Z'
