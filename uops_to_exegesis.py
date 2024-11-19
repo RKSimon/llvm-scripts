@@ -76,7 +76,7 @@ def print_cpu_uops_yaml(cpu):
    [cpuname, cpumodel, portmap] = get_cpu_details(cpu)
 
    for instrNode in root.iter('instruction'):
-      if instrNode.attrib['extension'] not in ['BASE', 'ADOX_ADCX', 'BMI1', 'BMI2', 'LZCNT', 'MMX', 'SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4a', 'SSE4', 'AVX', 'AVX2', 'AVX512VEX', 'AVX512EVEX', 'PCLMULQDQ', 'VPCLMULQDQ', 'F16C', 'FMA']:
+      if instrNode.attrib['extension'] not in ['BASE', 'ADOX_ADCX', 'BMI1', 'BMI2', 'LZCNT', 'MMX', 'SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4a', 'SSE4', 'AVX', 'AVX2', 'AVX2GATHER', 'AVX512VEX', 'AVX512EVEX', 'PCLMULQDQ', 'VPCLMULQDQ', 'F16C', 'FMA']:
          continue
       if any(x in instrNode.attrib['isa-set'] for x in ['FP16']):
          continue
@@ -105,6 +105,8 @@ def print_cpu_uops_yaml(cpu):
 
       ismov = asm.find('MOV') != -1
       ismaskmov = asm.find('MASKMOV') != -1
+      isgather = asm.find('GATHER') != -1
+      isscatter = asm.find('SCATTER') != -1
       iscrc32 = asm.find('CRC32') != -1
       isprefetch = instrNode.attrib['category'] in ['PREFETCH']
       isconvert = instrNode.attrib['category'] in ['CONVERT']
@@ -294,6 +296,12 @@ def print_cpu_uops_yaml(cpu):
       if isprefetch or asm.find('MXCSR') != -1:
         size = ''
         sig = ''
+
+      if isgather:
+        sig = 'rm'
+
+      if isscatter:
+        sig = 'mr'
 
       if isbmi or islzcnt:
         if asm.startswith('BEXTR') or asm.startswith('BZHI') or asm.startswith('SARX') or asm.startswith('SHLX') or asm.startswith('SHRX'):
