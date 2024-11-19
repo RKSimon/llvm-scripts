@@ -97,7 +97,7 @@ def print_cpu_uops_yaml(cpu):
       if asm.startswith(tuple(['LOCK','CMOV','ENTER','CMPXCHG','INVLPG','POP','PUSH','RET','SET','SLDT','STR','VER'])):
         continue
       if instrNode.attrib['extension'] in ['AVX512EVEX']:
-        if any(x in asm for x in ['GATHER','SCATTER','VEXTRACT','VGETEXP','VGETMANT','VINSERT','VPMOVB2','VPMOV','VREDUCE','VRND','VP2INTERSECT','VPDP','VPSHUFBIT','BF16']):
+        if any(x in asm for x in ['GATHER','SCATTER','VEXTRACT','VGETEXP','VGETMANT','VINSERT','VREDUCE','VRND','VP2INTERSECT','VPDP','VPSHUFBIT','BF16']):
           continue
       archs = instrNode.iter('architecture')
       if not any(x.attrib['name'] == cpuname for x in archs):
@@ -133,6 +133,8 @@ def print_cpu_uops_yaml(cpu):
 
       isstore = asm.startswith('{store}')
       asm = asm.removeprefix('{store}').lstrip()
+
+      istruncate = asm.removeprefix('VPMOV').removeprefix('U').removeprefix('S') in ['DB','DW','QB','QD','QW','WB']
 
       # TODO: handle evex variants
       isevex_variant = asm.startswith('{evex}')
@@ -199,7 +201,7 @@ def print_cpu_uops_yaml(cpu):
               srcwidth = int(opwidth)
               isload = ismem
 
-        if isconvert and xtype is not None:
+        if (isconvert or istruncate) and xtype is not None:
           xtype = xtype.removeprefix('i').removeprefix('u').removeprefix('f')
           if operandIdx == 1:
             dstwidth = int(xtype)
@@ -216,7 +218,7 @@ def print_cpu_uops_yaml(cpu):
                   size = 'Z128'
 
         if isevex and opwidth is not None and size == '':
-          if asm.startswith('VCMP') or asm.startswith('VPCMP') or asm.startswith('VFPCLASS') or asm.startswith('VPTEST'):
+          if asm.startswith('VCMP') or asm.startswith('VPCMP') or asm.startswith('VFPCLASS') or asm.startswith('VPTEST') or asm.startswith('VPMOVM2') or asm.endswith('2M'):
             opsize = int(opwidth) * broadcast_factor
             if isavx512scalar or opsize == 512:
               size = 'Z'
@@ -244,7 +246,7 @@ def print_cpu_uops_yaml(cpu):
                   size = 'Z128'
             # TODO: either cleanup this logic or simplify some LLVM instruction names to avoid this
             if not isevex or not (isconflict or iscompress or isexpand or asm.startswith('VPLZCNT') or asm.startswith('VPOPCNT')):
-              if not isbase and not isextract and not isconvert and not asm.startswith('KMOV'):
+              if not isbase and not isextract and not isconvert and not asm.startswith('KMOV') and not asm.startswith('VPMOVM2') and not asm.endswith('2M'):
                 continue
               if isconvert and (asm.find('2SD') != -1 or asm.find('2SS') != -1):
                 continue
