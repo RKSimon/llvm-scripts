@@ -207,11 +207,12 @@ def print_cpu_uops_yaml(cpu):
             srcwidth = int(xtype)
             if srcwidth > dstwidth:
               if opwidth is not None:
-                if isavx512scalar or opwidth == '512':
+                opsize = int(opwidth) * broadcast_factor
+                if isavx512scalar or opsize == 512:
                   size = 'Z'
-                elif opwidth == '256':
+                elif opsize == 256:
                   size = 'Z256' if isevex else 'Y'
-                elif isevex and opwidth == '128':
+                elif isevex and opsize == 128:
                   size = 'Z128'
 
         if isevex and opwidth is not None and size == '':
@@ -234,11 +235,12 @@ def print_cpu_uops_yaml(cpu):
           elif operandNode.attrib.get('r', '0') == '0' or isevex:
             if operandNode.attrib.get('w', '1') == '1':
               if opwidth is not None:
-                if isavx512scalar or opwidth == '512':
+                opsize = int(opwidth) * broadcast_factor
+                if isavx512scalar or opsize == 512:
                   size = 'Z'
-                elif opwidth == '256':
+                elif opsize == 256:
                   size = 'Z256' if isevex else 'Y'
-                elif isevex and opwidth == '128':
+                elif isevex and opsize == 128:
                   size = 'Z128'
             # TODO: either cleanup this logic or simplify some LLVM instruction names to avoid this
             if not isevex or not (isconflict or iscompress or isexpand or asm.startswith('VPLZCNT') or asm.startswith('VPOPCNT')):
