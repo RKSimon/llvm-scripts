@@ -81,6 +81,7 @@ def print_cpu_uops_yaml(cpu):
       if any(x in instrNode.attrib['isa-set'] for x in ['FP16']):
          continue
 
+      isaset = instrNode.attrib.get('isa-set', '')
       iclass = instrNode.attrib['iclass']
       iform = instrNode.attrib['iform']
       asm = instrNode.attrib['asm']
@@ -96,7 +97,7 @@ def print_cpu_uops_yaml(cpu):
       if asm.startswith(tuple(['LOCK','CMOV','ENTER','CMPXCHG','INVLPG','POP','PUSH','RET','SET','SLDT','STR','VER'])):
         continue
       if instrNode.attrib['extension'] in ['AVX512EVEX']:
-        if any(x in asm for x in ['GATHER','SCATTER','VEXTRACT','VFIXUPIMM','VFPCLASS','VGETEXP','VGETMANT','VINSERT','VPMOVB2','VPMOV','VRANGE','VREDUCE','VRND','VSCALE','VP2INTERSECT','VPDP','VPSHUFBIT','BF16']):
+        if any(x in asm for x in ['GATHER','SCATTER','VEXTRACT','VFIXUPIMM','VGETEXP','VGETMANT','VINSERT','VPMOVB2','VPMOV','VRANGE','VREDUCE','VRND','VSCALE','VP2INTERSECT','VPDP','VPSHUFBIT','BF16']):
           continue
       archs = instrNode.iter('architecture')
       if not any(x.attrib['name'] == cpuname for x in archs):
@@ -124,7 +125,7 @@ def print_cpu_uops_yaml(cpu):
       iskmask = instrNode.attrib['category'] in ['KMASK']
       ismask = instrNode.attrib.get('mask', '0') == '1'
       iszeroing = instrNode.attrib.get('zeroing', '0') == '1'
-      isavx512scalar = instrNode.attrib.get('isa-set', '') == 'AVX512F_SCALAR'
+      isavx512scalar = isaset in ['AVX512F_SCALAR', 'AVX512DQ_SCALAR']
       isshiftrotate = isbase and instrNode.attrib['category'] in ['ROTATE','SHIFT']
 
       isload = asm.startswith('{load}')
@@ -160,6 +161,10 @@ def print_cpu_uops_yaml(cpu):
         opwidth = operandNode.attrib.get('width', None)
         mem_suffix = operandNode.attrib.get('memory-suffix', None)
         xtype = operandNode.attrib.get('xtype')
+
+        broadcast_factor = 1
+        if mem_suffix is not None:
+          broadcast_factor = int(mem_suffix.removeprefix('{1to').removesuffix('}'))
 
         r_sig = 'r'
         if isreg:
@@ -210,12 +215,13 @@ def print_cpu_uops_yaml(cpu):
                   size = 'Z128'
 
         if isevex and opwidth is not None and size == '':
-          if asm.startswith('VCMP') or asm.startswith('VPCMP') or asm.startswith('VPTEST'):
-            if opwidth == '512':
+          if asm.startswith('VCMP') or asm.startswith('VPCMP') or asm.startswith('VFPCLASS') or asm.startswith('VPTEST'):
+            opsize = int(opwidth) * broadcast_factor
+            if isavx512scalar or opsize == 512:
               size = 'Z'
-            elif opwidth == '256':
+            elif opsize == 256:
               size = 'Z256'
-            elif opwidth == '128':
+            elif opsize == 128:
               size = 'Z128'
 
         if first:
@@ -396,7 +402,7 @@ def print_cpu_uops_yaml(cpu):
          sig += '0'
 
       if isevex and isavx512scalar and not ismov:
-        if asm.find('VRCP14') == -1 and asm.find('VRSQRT14') == -1:
+        if not (asm.startswith('VRCP14') or asm.startswith('VRSQRT14') or asm.startswith('VFPCLASS')):
           sig += '_Int'
 
       if isevex and ismask:
