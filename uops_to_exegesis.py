@@ -97,7 +97,7 @@ def print_cpu_uops_yaml(cpu):
       if asm.startswith(tuple(['LOCK','CMOV','ENTER','CMPXCHG','INVLPG','POP','PUSH','RET','SET','SLDT','STR','VER'])):
         continue
       if instrNode.attrib['extension'] in ['AVX512EVEX']:
-        if any(x in asm for x in ['GATHER','SCATTER','VEXTRACT','VFIXUPIMM','VGETEXP','VGETMANT','VINSERT','VPMOVB2','VPMOV','VREDUCE','VRND','VP2INTERSECT','VPDP','VPSHUFBIT','BF16']):
+        if any(x in asm for x in ['GATHER','SCATTER','VEXTRACT','VGETEXP','VGETMANT','VINSERT','VPMOVB2','VPMOV','VREDUCE','VRND','VP2INTERSECT','VPDP','VPSHUFBIT','BF16']):
           continue
       archs = instrNode.iter('architecture')
       if not any(x.attrib['name'] == cpuname for x in archs):
@@ -404,7 +404,7 @@ def print_cpu_uops_yaml(cpu):
          sig += '0'
 
       if isevex and isavx512scalar and not ismov:
-        if not (asm.startswith('VRCP14') or asm.startswith('VRSQRT14') or asm.startswith('VFPCLASS') or asm.startswith('VRANGE') or asm.startswith('VSCALE')):
+        if not (asm.startswith('VRCP14') or asm.startswith('VRSQRT14') or asm.startswith('VFIXUPIMM') or asm.startswith('VFPCLASS') or asm.startswith('VRANGE') or asm.startswith('VSCALE')):
           sig += '_Int'
 
       if isevex and ismask:
