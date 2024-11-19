@@ -97,7 +97,7 @@ def print_cpu_uops_yaml(cpu):
       if asm.startswith(tuple(['LOCK','CMOV','ENTER','CMPXCHG','INVLPG','POP','PUSH','RET','SET','SLDT','STR','VER'])):
         continue
       if instrNode.attrib['extension'] in ['AVX512EVEX']:
-        if any(x in asm for x in ['GATHER','SCATTER','VEXTRACT','VGETEXP','VGETMANT','VINSERT','VREDUCE','VRND','VPDP','BF16']):
+        if any(x in asm for x in ['GATHER','SCATTER','VEXTRACT','VGETEXP','VGETMANT','VINSERT','VREDUCE','VRND','BF16']):
           continue
       archs = instrNode.iter('architecture')
       if not any(x.attrib['name'] == cpuname for x in archs):
@@ -390,10 +390,13 @@ def print_cpu_uops_yaml(cpu):
         size = ''
 
       # 3 arg signature cleanups
-      if isfma or asm.find('VFMADD') != -1 or asm.find('VFNMADD') != -1 or asm.find('VFMSUB') != -1 or asm.find('VFNMSUB') != -1:
+      if isfma or asm.startswith('VFMADD') or asm.startswith('VFNMADD') or asm.startswith('VFMSUB') or asm.startswith('VFNMSUB'):
         sig = 'm' if sig.find('m') != -1 else 'r'
 
-      if asm.find('VPMADD52') != -1 or asm.find('VPSHLDV') != -1 or asm.find('VPSHRDV') != -1:
+      if asm.startswith('VPMADD52') or asm.startswith('VPSHLDV') or asm.startswith('VPSHRDV'):
+        sig = 'm' if sig.find('m') != -1 else 'r'
+
+      if asm.startswith('VPDP'):
         sig = 'm' if sig.find('m') != -1 else 'r'
 
       # Signature postfixes
