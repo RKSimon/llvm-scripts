@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import argparse
+import argparse, re
 from ast import Continue
 import xml.etree.ElementTree as ET
 
@@ -97,7 +97,7 @@ def print_cpu_uops_yaml(cpu):
       if asm.startswith(tuple(['LOCK','CMOV','ENTER','CMPXCHG','INVLPG','POP','PUSH','RET','SET','SLDT','STR','VER'])):
         continue
       if instrNode.attrib['extension'] in ['AVX512EVEX']:
-        if any(x in asm for x in ['VGETEXP','VGETMANT','VREDUCE','VRND','BF16']):
+        if any(x in asm for x in ['VGETEXP','VGETMANT','VREDUCE','VRND']):
           continue
       archs = instrNode.iter('architecture')
       if not any(x.attrib['name'] == cpuname for x in archs):
@@ -207,7 +207,7 @@ def print_cpu_uops_yaml(cpu):
         if (isconvert or istruncate or isvextract or isscatter) and xtype is not None:
           xtype = xtype.removeprefix('i').removeprefix('u').removeprefix('f')
           if operandIdx == 1:
-            dstwidth = int(xtype)
+            dstwidth = int(re.sub(r'^[a-zA-Z]+', '', xtype))
           if operandIdx == (3 if ismask else 2):
             srcwidth = int(xtype)
             if srcwidth >= dstwidth:
@@ -251,7 +251,7 @@ def print_cpu_uops_yaml(cpu):
             if not isevex or not (isconflict or iscompress or isexpand or asm.startswith('VPLZCNT') or asm.startswith('VPOPCNT')):
               if not isbase and not isextract and not isconvert and not asm.startswith('KMOV') and not asm.startswith('VPMOVM2') and not asm.endswith('2M'):
                 continue
-              if isconvert and (asm.find('2SD') != -1 or asm.find('2SS') != -1):
+              if isconvert and (asm.find('2SD') != -1 or asm.find('2SS') != -1 or asm.startswith('VCVTNE2PS2BF16')):
                 continue
 
         if isreg:
@@ -399,7 +399,7 @@ def print_cpu_uops_yaml(cpu):
       if asm.startswith('VPMADD52') or asm.startswith('VPSHLDV') or asm.startswith('VPSHRDV'):
         sig = 'm' if sig.find('m') != -1 else 'r'
 
-      if asm.startswith('VPDP'):
+      if asm.startswith('VPDP') or asm.startswith('VDPBF16'):
         sig = 'm' if sig.find('m') != -1 else 'r'
 
       # Signature postfixes
