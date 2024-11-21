@@ -123,6 +123,7 @@ def print_cpu_uops_yaml(cpu):
       issse4a = instrNode.attrib['extension'] in ['SSE4a']
       isf16c = instrNode.attrib['extension'] in ['F16C']
       isfma = instrNode.attrib['extension'] in ['FMA']
+      issae = instrNode.attrib.get('sae', '0') == '1'
       isevex = instrNode.attrib.get('evex', '0') == '1'
       iskmask = instrNode.attrib['category'] in ['KMASK']
       ismask = instrNode.attrib.get('mask', '0') == '1'
@@ -411,6 +412,7 @@ def print_cpu_uops_yaml(cpu):
       if asm.startswith('BLENDV') or asm.startswith('PBLENDV'):
          sig += '0'
 
+      # TODO: Fix sae handling (VSCALEF etc.)
       if isevex and isavx512scalar and not ismov:
         if not (asm.startswith('VRCP14') or asm.startswith('VRSQRT14') or asm.startswith('VFIXUPIMM') or asm.startswith('VFPCLASS') or asm.startswith('VRANGE') or asm.startswith('VREDUCE') or asm.startswith('VSCALE')):
           sig += '_Int'
