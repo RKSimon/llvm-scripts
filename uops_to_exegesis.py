@@ -97,7 +97,7 @@ def print_cpu_uops_yaml(cpu):
       if asm.startswith(tuple(['LOCK','CMOV','ENTER','CMPXCHG','INVLPG','POP','PUSH','RET','SET','SLDT','STR','VER'])):
         continue
       if instrNode.attrib['extension'] in ['AVX512EVEX']:
-        if any(x in asm for x in ['GATHER','SCATTER','VEXTRACT','VGETEXP','VGETMANT','VREDUCE','VRND','BF16']):
+        if any(x in asm for x in ['GATHER','SCATTER','VGETEXP','VGETMANT','VREDUCE','VRND','BF16']):
           continue
       archs = instrNode.iter('architecture')
       if not any(x.attrib['name'] == cpuname for x in archs):
@@ -129,6 +129,7 @@ def print_cpu_uops_yaml(cpu):
       iszeroing = instrNode.attrib.get('zeroing', '0') == '1'
       isavx512scalar = isaset in ['AVX512F_SCALAR', 'AVX512DQ_SCALAR']
       isshiftrotate = isbase and instrNode.attrib['category'] in ['ROTATE','SHIFT']
+      isvextract = isevex and (asm.startswith('VEXTRACTF') or asm.startswith('VEXTRACTI'))
 
       isload = asm.startswith('{load}')
       asm = asm.removeprefix('{load}').lstrip()
@@ -203,13 +204,13 @@ def print_cpu_uops_yaml(cpu):
               srcwidth = int(opwidth)
               isload = ismem
 
-        if (isconvert or istruncate) and xtype is not None:
+        if (isconvert or istruncate or isvextract) and xtype is not None:
           xtype = xtype.removeprefix('i').removeprefix('u').removeprefix('f')
           if operandIdx == 1:
             dstwidth = int(xtype)
           if operandIdx == (3 if ismask else 2):
             srcwidth = int(xtype)
-            if srcwidth > dstwidth:
+            if srcwidth >= dstwidth:
               if opwidth is not None:
                 opsize = int(opwidth) * broadcast_factor
                 if isavx512scalar or opsize == 512:
