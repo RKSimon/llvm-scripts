@@ -78,6 +78,8 @@ def print_cpu_uops_yaml(cpu):
    for instrNode in root.iter('instruction'):
       if instrNode.attrib['extension'] not in ['BASE', 'ADOX_ADCX', 'BMI1', 'BMI2', 'LZCNT', 'MMX', 'SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4a', 'SSE4', 'AVX', 'AVX2', 'AVX2GATHER', 'AVX512VEX', 'AVX512EVEX', 'PCLMULQDQ', 'VPCLMULQDQ', 'F16C', 'FMA']:
          continue
+
+      # TODO - handle FP16 instructions
       if any(x in instrNode.attrib['isa-set'] for x in ['FP16']):
          continue
 
