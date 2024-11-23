@@ -143,6 +143,10 @@ def print_cpu_uops_yaml(cpu):
       if isevex_variant:
         continue
 
+      # TODO: handle sae variants
+      if issae:
+        continue
+
       fail = False
       opwidth = None
       srcwidth = None
