@@ -97,7 +97,7 @@ def print_cpu_uops_yaml(cpu):
       if asm.startswith(tuple(['LOCK','CMOV','ENTER','CMPXCHG','INVLPG','POP','PUSH','RET','SET','SLDT','STR','VER'])):
         continue
       if instrNode.attrib['extension'] in ['AVX512EVEX']:
-        if any(x in asm for x in ['VGETEXP','VGETMANT','VRND']):
+        if any(x in asm for x in ['VGETEXP','VGETMANT']):
           continue
       archs = instrNode.iter('architecture')
       if not any(x.attrib['name'] == cpuname for x in archs):
@@ -250,7 +250,7 @@ def print_cpu_uops_yaml(cpu):
                   size = 'Z128'
             # TODO: either cleanup this logic or simplify some LLVM instruction names to avoid this
             if not isevex or not (isconflict or iscompress or isexpand or asm.startswith('VPLZCNT') or asm.startswith('VPOPCNT')):
-              if not isbase and not isextract and not isconvert and not asm.startswith('KMOV') and not asm.startswith('VPMOVM2') and not asm.startswith('VREDUCEP') and not asm.endswith('2M'):
+              if not isbase and not isextract and not isconvert and not asm.startswith('KMOV') and not asm.startswith('VPMOVM2') and not asm.startswith('VREDUCEP') and not asm.startswith('VRNDSCALEP') and not asm.endswith('2M'):
                 continue
               if isconvert and (asm.find('2SD') != -1 or asm.find('2SS') != -1 or asm.startswith('VCVTNE2PS2BF16')):
                 continue
