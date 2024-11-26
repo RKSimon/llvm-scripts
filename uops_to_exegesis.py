@@ -117,6 +117,8 @@ def print_cpu_uops_yaml(cpu):
       isadx = instrNode.attrib['extension'] in ['ADOX_ADCX']
       isbmi = instrNode.attrib['extension'] in ['BMI1','BMI2']
       islzcnt = instrNode.attrib['extension'] in ['LZCNT']
+      isrotate = instrNode.attrib['category'] in ['ROTATE']
+      isshift = instrNode.attrib['category'] in ['SHIFT']
       ismmx = instrNode.attrib['category'] in ['MMX'] or instrNode.attrib['extension'] in ['MMX']
       issse = instrNode.attrib['extension'] in ['SSE', 'SSE2', 'SSE3', 'SSSE3', 'SSE4', 'SSE4a']
       issse4a = instrNode.attrib['extension'] in ['SSE4a']
@@ -165,6 +167,7 @@ def print_cpu_uops_yaml(cpu):
         isreg = operandNode.attrib['type'] == 'reg'
         ismem = operandNode.attrib['type'] == 'mem'
         isimm = operandNode.attrib['type'] == 'imm'
+        isimplicit = operandNode.attrib.get('implicit', '0') == '1'
         isflags = operandNode.attrib['type'] == 'flags'
         isopmask = operandNode.attrib.get('opmask', '0') == '1'
         opwidth = operandNode.attrib.get('width', None)
@@ -262,7 +265,10 @@ def print_cpu_uops_yaml(cpu):
           if not isopmask:
             sig += r_sig
         elif isimm:
-          sig += 'i'
+          if (isshift or isrotate) and isimplicit:
+            sig += '1'
+          else:
+            sig += 'i'
           if isbase and (opwidth == '8' or int(dstwidth) > int(opwidth)):
             if asm == 'TEST' and opwidth == '8':
               sig = sig # TODO
