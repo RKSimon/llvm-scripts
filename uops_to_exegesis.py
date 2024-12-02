@@ -152,9 +152,11 @@ def print_cpu_uops_yaml(cpu):
         continue
 
       fail = False
+      vsib = None
       opwidth = None
       srcwidth = None
       dstwidth = None
+      maxwidth = 0
       operandCount = len(list(instrNode.iter('operand')))
       for operandNode in instrNode.iter('operand'):
         operandIdx = int(operandNode.attrib['idx'])
@@ -173,10 +175,14 @@ def print_cpu_uops_yaml(cpu):
         opwidth = operandNode.attrib.get('width', None)
         mem_suffix = operandNode.attrib.get('memory-suffix', None)
         xtype = operandNode.attrib.get('xtype')
+        vsib = operandNode.attrib.get('VSIB', vsib)
 
         broadcast_factor = 1
         if mem_suffix is not None:
           broadcast_factor = int(mem_suffix.removeprefix('{1to').removesuffix('}'))
+
+        if opwidth is not None:
+          maxwidth = max(maxwidth, int(opwidth))
 
         r_sig = 'r'
         if isreg:
@@ -433,6 +439,12 @@ def print_cpu_uops_yaml(cpu):
         sig += 'kz' if iszeroing else 'k'
 
       if isgather:
+        if maxwidth == 512 or vsib == 'ZMM':
+          size = 'Z'
+        elif maxwidth == 256 or vsib == 'YMM':
+          size = 'Z256' if isevex else 'Y'
+        else:
+          size = 'Z128' if isevex else ''
         sig = 'rm'
 
       if isscatter:
