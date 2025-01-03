@@ -430,13 +430,13 @@ def print_cpu_uops_yaml(cpu):
       if asm.startswith('BLENDV') or asm.startswith('PBLENDV'):
          sig += '0'
 
+      if isevex and ismask:
+        sig += 'kz' if iszeroing else 'k'
+
       # TODO: Fix sae handling (VSCALEF etc.)
       if isevex and isavx512scalar and not ismov:
         if not (asm.startswith('VRCP14') or asm.startswith('VRSQRT14') or asm.startswith('VFIXUPIMM') or asm.startswith('VFPCLASS') or asm.startswith('VGETEXP') or asm.startswith('VGETMANT') or asm.startswith('VRANGE') or asm.startswith('VREDUCE') or asm.startswith('VSCALE')):
           sig += '_Int'
-
-      if isevex and ismask:
-        sig += 'kz' if iszeroing else 'k'
 
       if isgather:
         if maxwidth == 512 or vsib == 'ZMM':
