@@ -557,7 +557,6 @@ def int_reductions(maxwidth, ops, cpus):
           opname = f"vector.reduce.{op}"
           run_analysis(f"{vectype} %a0", scltype, cmd, opname, opname, cpus, declaration)
 
-
 # TODO: SK_Transpose
 # TODO: SK_InsertSubvector
 # TODO: SK_ExtractSubvector
@@ -571,39 +570,47 @@ def shuffle_kinds(maxwidth, kinds, cpus):
           if (basewidth * elementcount) <= maxwidth:
             mtype = get_type(elementcount, f"i32")
 
+            fence = True
             maskelts = []
             if kind == "sk_broadcast":
-              maskelts = ["i32 0"] * elementcount
+              maskelts = [0] * elementcount
             elif kind == "sk_reverse":
               for elt in reversed(range(elementcount)):
-                maskelts.append(f"i32 {elt}")
+                maskelts.append(elt)
             elif kind == "sk_select":
+              fence = False
               for elt in range(elementcount):
                 m = elt + randint(0,1) * elementcount
-                maskelts.append(f"i32 {m}")
+                maskelts.append(m)
             elif kind == "sk_splice":
               baseelt = randrange(1, elementcount)
               for elt in range(baseelt, baseelt + elementcount):
-                maskelts.append(f"i32 {elt}")
+                maskelts.append(elt)
             elif kind == "sk_permutesinglesrc":
               for elt in range(elementcount):
                 m = randrange(0, elementcount)
-                maskelts.append(f"i32 {m}")
+                maskelts.append(m)
             else: #kind == "sk_permutetwosrc":
               for elt in range(elementcount):
                 m = randrange(0, 2*elementcount)
-                maskelts.append(f"i32 {m}")
+                maskelts.append(m)
 
-            mask = f"<" + ", ".join(maskelts) + f">"
+            # TODO: regenerate the random shuffle mask if we created an identity
+            if maskelts == range(elementcount):
+              continue
+            if maskelts == range(elementcount, 2*elementcount):
+              continue
+
+            mask = f"<i32 " + ", i32 ".join(map(str, maskelts)) + f">"
 
             itype = get_type(elementcount, f"i{basewidth}")
             icmd = f"%result = shufflevector {itype} %a0, {itype} %a1, {mtype} {mask}"
-            run_analysis(f"{itype} %a0, {itype} %a1", itype, icmd, "shufflevector", kind, cpus)
+            run_analysis(f"{itype} %a0, {itype} %a1", itype, icmd, "shufflevector", kind, cpus, usefence=fence)
 
             if (basewidth >= 16):
               ftype = get_type(elementcount, get_float_string(basewidth))
               fcmd = f"%result = shufflevector {ftype} %a0, {ftype} %a1, {mtype} {mask}"
-              run_analysis(f"{ftype} %a0, {ftype} %a1", ftype, fcmd, "shufflevector", kind, cpus)
+              run_analysis(f"{ftype} %a0, {ftype} %a1", ftype, fcmd, "shufflevector", kind, cpus, usefence=fence)
 
 def memop_intrinsics(maxwidth, ops, cpus):
   for op in ops:
@@ -704,8 +711,6 @@ def test_cpus(targetops, maxwidth, cpulevel, cpus):
   # TODO - select with icmp
 
   # TODO - bitcasts i1/i32/i64/float/double
-
-  # TODO - vector ops (extract/insert/shuffle)
 
   # TODO - better reduction op filtering
   if len(targetops) == 0 or "reduce" in targetops:
