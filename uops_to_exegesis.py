@@ -297,7 +297,7 @@ def print_cpu_uops_yaml(cpu):
         fail = True
 
       # TODO: uops is missing memory resource info on ZEN
-      if (cpuname == 'ZEN3' or cpuname == 'ZEN4') and sig.find('m') != -1:
+      if cpuname.startswith('ZEN') and sig.find('m') != -1:
         fail = True
 
       if fail:
