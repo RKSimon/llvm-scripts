@@ -31,14 +31,14 @@ def _run_command(cmd, *, input, op):
     raise Error(f"Error running {cmd} : {op}") from exc
 
 
-def _run_costmodel(op, opname, ir, cpu, costkind):
+def _run_costmodel(op, opname, ir, cpu):
   # Run opt to get cost-model report
   analysis = _run_command(
     [
       args.opt_binary,
       "-passes=print<cost-model>",
       "-disable-output",
-      f"-cost-kind={costkind}",
+      "-cost-kind=all",
       f"-mcpu={cpu}",
       f"-mtriple={args.triple}"
     ],
@@ -46,13 +46,26 @@ def _run_costmodel(op, opname, ir, cpu, costkind):
     op=op,
   )
 
+  costs = {}
+
   # Extract analyze costs
   for line in analysis.stderr.splitlines():
     if opname in line:
       matches = re.search(
-        r"Cost Model: Found an estimated cost of (\d+)", line
+        r"Cost Model: Found costs of RThru:(\d+) CodeSize:(\d+) Lat:(\d+) SizeLat:(\d+)", line
       )
-      return float(matches.group(1))
+      if matches:
+        costs["code-size"] = float(matches.group(2))
+        costs["latency"] = float(matches.group(3))
+        costs["size-latency"] = float(matches.group(4))
+        costs["throughput"] = float(matches.group(1))
+        return costs
+
+      matches = re.search(
+        r"Cost Model: Found costs of (\d+)", line
+      )
+      costs["code-size"] = costs["latency"] = costs["size-latency"] = costs["throughput"] = float(matches.group(1))
+      return costs
 
   return None
 
@@ -147,19 +160,19 @@ def run_analysis(argsignature, dsttype, op, opname, opdesc, cpus, declaration=""
       )
 
   with concurrent.futures.ThreadPoolExecutor(max_workers=args.num_threads) as e:
-    analysis_results = defaultdict(dict)
+    analysis_results = {}
     mca_results = {}
 
     for cpu in cpus:
       mca_results[cpu] = e.submit(_run_codegen, op, ir, cpu)
-      for costkind in costkinds:
-        analysis_results[costkind][cpu] = e.submit(_run_costmodel, op, opname, ir, cpu, costkind)
+      analysis_results[cpu] = e.submit(_run_costmodel, op, opname, ir, cpu)
 
     for cpu in cpus:
-      costs = mca_results[cpu].result()
+      llc_costs = mca_results[cpu].result()
+      opt_costs = analysis_results[cpu].result()
       for costkind in costkinds:
-        mca_costs[costkind][cpu] = costs[costkind]
-        analysis_costs[costkind][cpu] = analysis_results[costkind][cpu].result()
+        mca_costs[costkind][cpu] = llc_costs[costkind]
+        analysis_costs[costkind][cpu] = opt_costs[costkind]
 
   for costkind in costkinds:
     minanalysis = min(analysis_costs[costkind].values())
