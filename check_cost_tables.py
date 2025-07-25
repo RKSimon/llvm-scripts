@@ -761,11 +761,16 @@ def main():
     default="x86_64--",
     help="Specify the target triple (default: x86_64--)",
   )
-  # TODO - add ability to ignore atom/silvermont etc.
   parser.add_argument(
     "--cpulevel",
     default=None,
     help="Only test cpus specific to a cpulevel(s)",
+  )
+  parser.add_argument(
+    "--disable-atom",
+    default=False,
+    help="Don't analyse atom/silvermont cpus",
+    action='store_true'
   )
   # TODO - --op(s) command line handling to select multiple ops for testing
   parser.add_argument(
@@ -819,6 +824,8 @@ def main():
 
   for targetcpu in targetcpus:
     (maxwidth, cpus) = cpulevels[targetcpu]
+    if args.disable_atom:
+      cpus = set(cpus) - set(["atom", "silvermont", "goldmont", "tremont"])
     test_cpus(targetops, maxwidth, targetcpu, cpus)
 
   return 0
