@@ -557,8 +557,16 @@ def memop_intrinsics(maxwidth, ops, cpus):
             ftype = get_type(elementcount, get_float_string(basewidth))
             istub = get_typeistub(elementcount, basewidth)
             fstub = get_typefstub(elementcount, basewidth)
-            align = int(4)
+            align = int(basewidth / 8)
 
+            if op == "maskedload":
+              icmd = f"%result = call {itype} @llvm.masked.load.{istub}.v{elementcount}p0(ptr %a0, i32 {align}, {btype} %a1, {itype} %a2)"
+              fcmd = f"%result = call {ftype} @llvm.masked.load.{fstub}.v{elementcount}p0(ptr %a0, i32 {align}, {btype} %a1, {ftype} %a2)"
+              ideclaration = f"declare {itype} @llvm.masked.load.{istub}.v{elementcount}p0(ptr, i32, {btype}, {itype})"
+              fdeclaration = f"declare {ftype} @llvm.masked.load.{fstub}.v{elementcount}p0(ptr, i32, {btype}, {ftype})"
+              opname = f"llvm.masked.load"
+              run_analysis(f"ptr %a0, {btype} %a1, {itype} %a2", itype, icmd, opname, opname, cpus, ideclaration)
+              run_analysis(f"ptr %a0, {btype} %a1, {ftype} %a2", ftype, fcmd, opname, opname, cpus, fdeclaration)
             if op == "gather":
               icmd = f"%result = call {itype} @llvm.masked.gather.{istub}.v{elementcount}p0({ptype} %a0, i32 {align}, {btype} %a1, {itype} %a2)"
               fcmd = f"%result = call {ftype} @llvm.masked.gather.{fstub}.v{elementcount}p0({ptype} %a0, i32 {align}, {btype} %a1, {ftype} %a2)"
@@ -673,8 +681,8 @@ def test_cpus(targetops, maxwidth, cpulevel, cpus):
   ops = filter_ops(targetops, ["fshl", "fshr"])
   int_funnelshifts(maxwidth, ops, cpus)
 
-  # TODO - maskedload/maskedstore/expandload/compressstore
-  ops = filter_ops(targetops, ["gather", "scatter"])
+  # TODO - maskedstore/expandload/compressstore
+  ops = filter_ops(targetops, ["maskedload","gather", "scatter"])
   memop_intrinsics(maxwidth, ops, cpus)
 
 def main():
