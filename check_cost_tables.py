@@ -13,7 +13,7 @@
 
 import argparse
 import math
-from random import randint
+from random import randint,randrange
 import re
 import os
 import subprocess
@@ -545,6 +545,53 @@ def int_reductions(maxwidth, ops, cpus):
           run_analysis(f"{vectype} %a0", scltype, cmd, opname, opname, cpus, declaration)
 
 
+# TODO: SK_Transpose
+# TODO: SK_InsertSubvector
+# TODO: SK_ExtractSubvector
+# TODO: per-lane shuffles
+# TODO: length changing shuffles
+def shuffle_kinds(maxwidth, kinds, cpus):
+  for kind in kinds:
+    for basewidth in [8, 16, 32, 64]:
+      for elementcount in [2, 4, 8, 16, 32, 64]:
+        if (basewidth * elementcount) >= 128:
+          if (basewidth * elementcount) <= maxwidth:
+            mtype = get_type(elementcount, f"i32")
+
+            maskelts = []
+            if kind == "sk_broadcast":
+              maskelts = ["i32 0"] * elementcount
+            elif kind == "sk_reverse":
+              for elt in reversed(range(elementcount)):
+                maskelts.append(f"i32 {elt}")
+            elif kind == "sk_select":
+              for elt in range(elementcount):
+                m = elt + randint(0,1) * elementcount
+                maskelts.append(f"i32 {m}")
+            elif kind == "sk_splice":
+              baseelt = randrange(1, elementcount)
+              for elt in range(baseelt, baseelt + elementcount):
+                maskelts.append(f"i32 {elt}")
+            elif kind == "sk_permutesinglesrc":
+              for elt in range(elementcount):
+                m = randrange(0, elementcount)
+                maskelts.append(f"i32 {m}")
+            else: #kind == "sk_permutetwosrc":
+              for elt in range(elementcount):
+                m = randrange(0, 2*elementcount)
+                maskelts.append(f"i32 {m}")
+
+            mask = f"<" + ", ".join(maskelts) + f">"
+
+            itype = get_type(elementcount, f"i{basewidth}")
+            icmd = f"%result = shufflevector {itype} %a0, {itype} %a1, {mtype} {mask}"
+            run_analysis(f"{itype} %a0, {itype} %a1", itype, icmd, "shufflevector", kind, cpus)
+
+            if (basewidth >= 16):
+              ftype = get_type(elementcount, get_float_string(basewidth))
+              fcmd = f"%result = shufflevector {ftype} %a0, {ftype} %a1, {mtype} {mask}"
+              run_analysis(f"{ftype} %a0, {ftype} %a1", ftype, fcmd, "shufflevector", kind, cpus)
+
 def memop_intrinsics(maxwidth, ops, cpus):
   for op in ops:
     for basewidth in [32, 64]:
@@ -681,6 +728,9 @@ def test_cpus(targetops, maxwidth, cpulevel, cpus):
   ops = filter_ops(targetops, ["fshl", "fshr"])
   int_funnelshifts(maxwidth, ops, cpus)
 
+  ops = filter_ops(targetops, ["sk_broadcast","sk_reverse","sk_select","sk_splice","sk_insertsubvector","sk_extractsubvector","sk_permutesinglesrc","sk_permutetwosrc"])
+  shuffle_kinds(maxwidth, ops, cpus)
+
   # TODO - maskedstore/expandload/compressstore
   ops = filter_ops(targetops, ["maskedload","gather", "scatter"])
   memop_intrinsics(maxwidth, ops, cpus)
@@ -711,6 +761,7 @@ def main():
     default="x86_64--",
     help="Specify the target triple (default: x86_64--)",
   )
+  # TODO - add ability to ignore atom/silvermont etc.
   parser.add_argument(
     "--cpulevel",
     default=None,
