@@ -562,55 +562,56 @@ def int_reductions(maxwidth, ops, cpus):
 # TODO: SK_ExtractSubvector
 # TODO: per-lane shuffles
 # TODO: length changing shuffles
-def shuffle_kinds(maxwidth, kinds, cpus):
+def shuffle_kinds(maxwidth, kinds, cpus, inlane = False):
   for kind in kinds:
     for basewidth in [8, 16, 32, 64]:
       for elementcount in [2, 4, 8, 16, 32, 64]:
         if (basewidth * elementcount) >= 128:
           if (basewidth * elementcount) <= maxwidth:
             mtype = get_type(elementcount, f"i32")
-
+            eltsperlane = int(128 / basewidth)
             fence = True
-            maskelts = []
-            if kind == "sk_broadcast":
-              maskelts = [0] * elementcount
-            elif kind == "sk_reverse":
-              for elt in reversed(range(elementcount)):
-                maskelts.append(elt)
-            elif kind == "sk_select":
-              fence = False
-              for elt in range(elementcount):
-                m = elt + randint(0,1) * elementcount
-                maskelts.append(m)
-            elif kind == "sk_splice":
-              baseelt = randrange(1, elementcount)
-              for elt in range(baseelt, baseelt + elementcount):
-                maskelts.append(elt)
-            elif kind == "sk_permutesinglesrc":
-              for elt in range(elementcount):
-                m = randrange(0, elementcount)
-                maskelts.append(m)
-            else: #kind == "sk_permutetwosrc":
-              for elt in range(elementcount):
-                m = randrange(0, 2*elementcount)
-                maskelts.append(m)
 
-            # TODO: regenerate the random shuffle mask if we created an identity
-            if maskelts == range(elementcount):
-              continue
-            if maskelts == range(elementcount, 2*elementcount):
-              continue
+            maskelts = []
+            while not maskelts:
+              if kind == "sk_broadcast":
+                maskelts = [0] * elementcount
+              elif kind == "sk_reverse":
+                for elt in reversed(range(elementcount)):
+                  maskelts.append(elt)
+              elif kind == "sk_select":
+                fence = maxwidth == 512 # avx512-predicated moves can fail on llvm-mca
+                for elt in range(elementcount):
+                  m = elt + randint(0,1) * elementcount
+                  maskelts.append(m)
+              elif kind == "sk_splice":
+                baseelt = randrange(1, elementcount, 2) # step=2 to ensure an odd stride
+                for elt in range(baseelt, baseelt + elementcount):
+                  maskelts.append(elt)
+              elif kind == "sk_permutesinglesrc":
+                for elt in range(elementcount):
+                  m = randrange(0, elementcount)
+                  maskelts.append(m)
+              else: #kind == "sk_permutetwosrc":
+                for elt in range(elementcount):
+                  m = randrange(0, 2*elementcount)
+                  maskelts.append(m)
+
+              # regenerate the random shuffle mask if we created an identity
+              if maskelts == list(range(elementcount)) or maskelts == list(range(elementcount, 2*elementcount)):
+                maskelts.clear()
 
             mask = f"<i32 " + ", i32 ".join(map(str, maskelts)) + f">"
+            opdesc = f"{kind} " + mask
 
             itype = get_type(elementcount, f"i{basewidth}")
             icmd = f"%result = shufflevector {itype} %a0, {itype} %a1, {mtype} {mask}"
-            run_analysis(f"{itype} %a0, {itype} %a1", itype, icmd, "shufflevector", kind, cpus, usefence=fence)
+            run_analysis(f"{itype} %a0, {itype} %a1", itype, icmd, "shufflevector", opdesc, cpus, usefence=fence)
 
             if (basewidth >= 16):
               ftype = get_type(elementcount, get_float_string(basewidth))
               fcmd = f"%result = shufflevector {ftype} %a0, {ftype} %a1, {mtype} {mask}"
-              run_analysis(f"{ftype} %a0, {ftype} %a1", ftype, fcmd, "shufflevector", kind, cpus, usefence=fence)
+              run_analysis(f"{ftype} %a0, {ftype} %a1", ftype, fcmd, "shufflevector", opdesc, cpus, usefence=fence)
 
 def memop_intrinsics(maxwidth, ops, cpus):
   for op in ops:
