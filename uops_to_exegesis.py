@@ -418,7 +418,7 @@ def print_cpu_uops_yaml(cpu):
       if asm.startswith('VPMADD52') or asm.startswith('VPSHLDV') or asm.startswith('VPSHRDV'):
         sig = 'm' if sig.find('m') != -1 else 'r'
 
-      if asm.startswith('VPDP') or asm.startswith('VDPBF16'):
+      if asm.startswith('VDPBF16'):
         sig = 'm' if sig.find('m') != -1 else 'r'
 
       # Signature postfixes
