@@ -791,6 +791,11 @@ def main():
     help="Don't analyse atom/silvermont cpus",
     action='store_true'
   )
+  parser.add_argument(
+    "--ignore-cpus",
+    default=None,
+    help="Don't analyse listed cpus"
+  )
   # TODO - --op(s) command line handling to select multiple ops for testing
   parser.add_argument(
     "--op", metavar="<op>", default=None, help="Only test requested op(s)"
@@ -845,6 +850,8 @@ def main():
     (maxwidth, cpus) = cpulevels[targetcpu]
     if args.disable_atom:
       cpus = set(cpus) - set(["atom", "silvermont", "goldmont", "tremont"])
+    if args.ignore_cpus is not None:
+      cpus = set(cpus) - set(args.ignore_cpus.split(','))
     test_cpus(targetops, maxwidth, targetcpu, cpus)
 
   return 0
