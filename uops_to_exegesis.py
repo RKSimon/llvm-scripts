@@ -25,7 +25,8 @@ def get_all_cpu_details():
     "znver1"         : ["ZEN+", "znver1", ("ZnFPU0", "ZnFPU1", "ZnFPU2", "ZnFPU3")],
     "znver2"         : ["ZEN2", "znver2", ("Zn2FPU0", "Zn2FPU1", "Zn2FPU2", "Zn2FPU3")],
     "znver3"         : ["ZEN3", "znver3", ("Zn3FP0", "Zn3FP1", "Zn3FP2", "Zn3FP3", "Zn3FP45", "Zn3FP45")],
-    "znver4"         : ["ZEN4", "znver4", ("Zn4FP0", "Zn4FP1", "Zn4FP2", "Zn4FP3", "Zn4FP45", "Zn4FP45")]
+    "znver4"         : ["ZEN4", "znver4", ("Zn4FP0", "Zn4FP1", "Zn4FP2", "Zn4FP3", "Zn4FP45", "Zn4FP45")],
+    "znver5"         : ["ZEN5", "znver4", ("Zn4FP0", "Zn4FP1", "Zn4FP2", "Zn4FP3", "Zn4FP45", "Zn4FP45")]
     }
 
 def get_cpu_details(cpu):
