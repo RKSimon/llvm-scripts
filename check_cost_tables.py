@@ -734,7 +734,7 @@ def test_cpus(targetops, maxwidth, cpulevel, cpus):
   int_unaryintrinsics(maxwidth, ops, cpus, False)
   int_unaryintrinsics(maxwidth, ops, cpus, True)
 
-  ops = filter_ops(targetops, ["smax", "smin", "umax", "umin"])
+  ops = filter_ops(targetops, ["smax", "smin", "umax", "umin", "clmul", "pdep", "pext"])
   int_binaryintrinsics(maxwidth, ops, cpus)
 
   ops = filter_ops(targetops, ["sadd.sat", "ssub.sat", "uadd.sat", "usub.sat"])
